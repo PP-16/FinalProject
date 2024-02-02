@@ -1,0 +1,37 @@
+.loginBg{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100vw;
+    height: 100vh;
+    background: url('https://cdn-cms.pgimgs.com/news/2018/12/81863819_xl.jpg');
+    background-size: cover;
+    backdrop-filter: blur(5px);
+}
+
+.loginForm{
+    background-color: rgba(255, 255, 255, 0.33);
+    box-shadow: 0px 8px 32px 0 rgba(0, 0, 255, 0.3);
+    backdrop-filter: blur(10px);
+    padding:  0px 25px 25px 25px;
+    border-radius: 16px;
+
+}
+.socialLogin{
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    color: white;
+    font-size: 24px;
+}
+
+.socialIcon{
+    cursor: pointer;
+}
+
+.regis{
+    font-size: 24px;
+    color: darkgrey;
+    display: flex;
+    justify-content: right;
+}
