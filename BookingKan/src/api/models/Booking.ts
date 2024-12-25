@@ -4,7 +4,7 @@ import { Passentger } from "./Passentger";
 export interface Booking {
     bookingId: number,
     dateAtBooking: Date,
-    seatNumbers: [],
+    seatNumbers: string[],
     totalPrice: number,
     bookingStatus: number,
     passengerId: number,
@@ -12,5 +12,7 @@ export interface Booking {
     itinerary:Itinerary,
     seatsSerialized:string,
     passenger:Passentger,
-    createAt:Date
+    createAt:Date,
+    checkIn : boolean,
+    note:string
 }

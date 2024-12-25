@@ -7,7 +7,7 @@ import {
   ShoppingCartOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { Col, Layout, Row, Image, MenuProps, Dropdown } from "antd";
+import { Col, Layout, Row, Image, MenuProps, Dropdown, Avatar } from "antd";
 import Typography from "antd/es/typography/Typography";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -15,31 +15,45 @@ import {
   useAppSelector,
 } from "../../api/redux/Store/configureStore";
 import { signOut } from "../../api/redux/Slice/AccountSlice";
-import { useState } from "react";
-
+import { ReactNode, useEffect, useState } from "react";
+import agent from "../../api/agent";
+import { PathImage } from "../../routers/PathImage";
+import { fetchSystem } from "../../api/redux/Slice/SystemSlice";
+import { PathPublicRouter } from "../../routers/PathAllRoute";
+import { fetchBookingForCanCle } from "../../api/redux/Slice/BookingSlice";
 const { Header, Content, Footer } = Layout;
 
-export const HomeUser = ({ children }: never) => {
+export const HomeUser: React.FC<{ children: ReactNode }> = ({ children }: any) => {
   const src =
     "https://static.thairath.co.th/media/dFQROr7oWzulq5FZUEj7TioeGNeKliUqUdIEC8Y53bhJ99D6QoXumj2DH4ktUjWjOU5.jpg";
 
   const dispatch = useAppDispatch();
-  const userId = useAppSelector((state: any) => state.account.user.passengerId);
 
-  const storedUser = localStorage.getItem(`user-${userId}`);
-  const cart = storedUser ? JSON.parse(storedUser) : [];
+  const [userDetail, setUser] = useState<any>([]);
+  const user = useAppSelector((t) => t.account.user);
+  const system = useAppSelector((t) => t.system.system);
+  // console.log("user", user);
+  // console.log("system", system);
+  
+  useEffect(() => {
+    agent.Account.getUser(user?.token).then((user) => setUser(user));
+    dispatch(fetchSystem());
+    dispatch(fetchBookingForCanCle())
+  }, []);
+  // console.log("userD", userDetail);
+  const image = PathImage.imageUser + userDetail.imagePassenger;
+
   const history = useNavigate();
 
-  // const countItem = cart.length;
-
-  // const [isCartModalVisible, setCartModalVisible] = useState(false);
   const items: MenuProps["items"] = [
     {
       key: "1",
       label: (
         <Row>
           <UserOutlined />
-          <Typography onClick={()=>history('/AccountPage')}>บัญชีของฉัน</Typography>
+          <Typography onClick={() => history(PathPublicRouter.accountPage)}>
+            บัญชีของฉัน
+          </Typography>
         </Row>
       ),
     },
@@ -51,7 +65,7 @@ export const HomeUser = ({ children }: never) => {
           <Typography
             onClick={() => {
               dispatch(signOut());
-              history("/");
+              history(PathPublicRouter.home);
               window.location.reload();
               // dispatch(clearCart(userId));
             }}
@@ -64,164 +78,49 @@ export const HomeUser = ({ children }: never) => {
   ];
 
   const [details, setDetails] = useState<any>([null]);
-  console.log("details", details);
+  // console.log("details", details);
   return (
-    <Layout style={{ flex: 1 }}>
-      <Header
-        style={{
-          backgroundColor: "#8FC0F9",
-         
-        }}
-      >
-        <Row style={{flex:1}}>
-          <Col span={16} style={{marginTop:10}}>
-            <Link to="/" >
-              <Row style={{ justifyContent: "flex-start"}}>
-                <CarOutlined style={{ fontSize: "25px", color: "black" }} />
-                <Typography style={{ fontSize: "25px", color: "black",textAlign:'center' }}>
-                  BookingKan
+    <Layout>
+      <Header style={{ backgroundColor: "#4F6F52" }}>
+        <Row gutter={{ xs: 8, sm: 16, md: 24, lg: 32 }}>
+          <Col xs={19} sm={18} md={20} xl={22} xxl={22} style={{ marginTop: 10 }}>
+            <Link to={PathPublicRouter.home}>
+              <Row >
+                {system.map((i) => {
+                  const imgLogo = PathImage.logo + i.logo;
+                  return (
+                    <Avatar
+                      size="large"
+                      shape="square"
+                      src={<img src={imgLogo} alt="avatar" />}
+                    />
+                  );
+                })}
+                <Typography
+                  style={{
+                    fontSize: "25px",
+                    color: "#F5EFE6",
+                    textAlign: "center",
+                  }}
+                >
+                  {system.map((i) => i.nameWeb)}
                 </Typography>
               </Row>
             </Link>
           </Col>
-          <Col span={8}>
-            <Row style={{ justifyContent: "right", alignItems: "center" }}>
+          <Col xs={5} sm={6} md={4} xl={2} xxl={2}>
+            <Row >
+              
               <div style={{ marginRight: 30 }}>
-                {/* <Badge count={countItem}>
-                  <ShoppingCartOutlined
-                    style={{ fontSize: "25px", margin: 10 }}
-                    onClick={() => setCartModalVisible(true)}
-                  />
-                </Badge>
-                <Modal
-                  title="ตระกร้า"
-                  visible={isCartModalVisible}
-                  onCancel={() => setCartModalVisible(false)}
-                  width={1000}
-                  footer={
-                    <Button
-                      shape="round"
-                      size="large"
-                      block
-                      style={{ backgroundColor: "#ffa39e", margin: 10 }}
-                    >
-                      ชำระเงิน
-                    </Button>
-                  }
-                >
-                  <Row>
-                    <Col span={8} push={16}>
-                      {details && (
-                        <>
-                          <Card style={{ margin: 16 }}>
-                            <Row style={{ justifyContent: "space-between" }}>
-                              <Typography
-                                style={{ fontSize: 25, textAlign: "center" }}
-                              >
-                                {details?.cars?.carModel}
-                              </Typography>
-
-                              <Typography style={{ fontSize: 15, padding: 12 }}>
-                                {details?.cars?.classCars?.price} ฿ / วัน
-                              </Typography>
-                            </Row>
-
-                            <Image
-                              width={250}
-                              alt="logo"
-                              src="https://gw.alipayobjects.com/zos/rmsportal/mqaQswcyDLcXyDKnZfES.png"
-                            />
-
-                            <Row gutter={[16, 16]}>
-                              <Col span={12}>
-                                <Typography>
-                                  Class : {details?.cars?.classCars?.className}
-                                </Typography>
-                           
-                              </Col>
-                              <Col span={12}>
-                              <Typography>
-                                  สถานที่ที่รับรถ : {details?.placePickup}
-                                </Typography>
-                                <Typography>
-                                  สถานที่ที่คืนรถ : {details?.placeReturn}
-                                </Typography>
-                              </Col>
-                            </Row>
-                            <Typography>
-                              รวมทั้งสิ้น {details?.diffInDays} วัน
-                            </Typography>
-                            <Typography>ราคารวม: {details?.totalprice}</Typography>
-                          </Card>
-                          <Card
-                            style={{ margin: 16 }}
-                            type="inner"
-                            title="ยอดรวม"
-                          >
-                            <Typography>
-                              ราคารวม : {details?.totalprice}
-                            </Typography>
-                          </Card>
-                        </>
-                      )}
-                    </Col>
-                    <Col span={16} pull={8}>
-                      {cart.map((item: any) => {
-                        const datePickup = moment(item.dateTimePickup);
-                        const dateRetrun = moment(item.dateTimeReturn);
-
-                        const diffInDays =
-                          dateRetrun.diff(datePickup, "days") + 1;
-                        console.log("diffInDays", diffInDays);
-
-                        const totalprice = item.itemPrice * diffInDays;
-                        console.log("totalprice", totalprice);
-
-                        return (
-                          <Card
-                            onClick={() =>
-                              setDetails({
-                                ...item,
-                                diffInDays: diffInDays,
-                                totalprice: totalprice,
-                              })
-                            }
-                            style={{ marginTop: 16 }}
-                            type="inner"
-                            title={item.cars.carRegistrationNumber}
-                            extra={
-                              <Button
-                                onClick={() =>
-                                  setDetails({
-                                    ...item,
-                                    diffInDays: diffInDays,
-                                    totalprice: totalprice,
-                                  })
-                                }
-                              >
-                                รายละเอียดเพิ่มเติม
-                              </Button>
-                            }
-                          >
-                            <Row>
-                              <Col span={12}> <Typography>วันที่รับรถ :  {datePickup.format("Do MMM YY")}</Typography>           
-                              <Typography>วันที่คืนรถ :   {dateRetrun.format("Do MMM YY")}</Typography>
-                              <Typography>ราคาต่อวัน : {item.itemPrice}</Typography></Col>
-                              <Col span={12}>
-                              <Typography>รวมทั้งหมด  : {diffInDays} วัน</Typography>
-                              <Typography>ราคารวม : {totalprice}</Typography>
-                              </Col>
-                            </Row>
-                             
-                          </Card>
-                        );
-                      })}
-                    </Col>
-                  </Row>
-                </Modal> */}
-
                 <Dropdown menu={{ items }} placement="bottomRight">
-                  <UserOutlined style={{ fontSize: "25px", margin: 10 }} />
+                  {userDetail.imagePassenger == null ? (
+                    <UserOutlined style={{ fontSize: "25px", margin: 10 }} />
+                  ) : (
+                    <Avatar
+                      src={image}
+                      style={{ fontSize: "25px", margin: 10 }}
+                    />
+                  )}
                 </Dropdown>
               </div>
             </Row>
@@ -233,42 +132,74 @@ export const HomeUser = ({ children }: never) => {
           {children}
         </main>
       </Content>
-      <Footer style={{ textAlign: "center", backgroundColor: "#8FC0F9" }}>
-        <Row>
-          <Col sm={2} md={4} xl={8}>
-            <Image src={src} />
-          </Col>
-          <Col sm={2} md={4} xl={8}>
-            <Typography style={{ fontSize: "20px" }}>ติดต่อ</Typography>
-            <Row style={{ justifyContent: "center" }}>
-              <PhoneOutlined style={{ fontSize: "18px" }} />
-              <Typography style={{ margin: 5, fontSize: "16px" }}>
-                012-3456789
-              </Typography>
+      <Footer style={{backgroundColor: "#4F6F52" }}>
+        {system.map((item: any) => {
+          const imagelogo = PathImage.logo + item?.logo;
+          return (
+            <Row>
+              <Col xs={24} sm={18} md={12} xl={8} xxl={8}>
+                <Row>
+                  <Col>
+                    <Image src={imagelogo} style={{ width: 200 }} />
+                    <Typography style={{ fontSize: "25px", color: "#E8DFCA" }}>
+                      {item.nameWeb}
+                    </Typography>
+                  </Col>
+                </Row>
+              </Col>
+
+              <Col xs={24} sm={18} md={12} xl={8} xxl={8}>
+                <Row>
+                  <Typography style={{ fontSize: "25px", color: "#E8DFCA" }}>
+                    ติดต่อ
+                  </Typography>
+                </Row>
+                <Row>
+                  <PhoneOutlined
+                    style={{ fontSize: "18px", color: "#E8DFCA" }}
+                  />
+                  <Typography
+                    style={{ margin: 5, fontSize: "20px", color: "#E8DFCA" }}
+                  >
+                    {item?.phoneNumber}
+                  </Typography>
+                </Row>
+                <Row>
+                  <FacebookOutlined
+                    style={{ fontSize: "18px", color: "#E8DFCA" }}
+                  />
+                  <a
+                    href={item?.contactFB}
+                    style={{ margin: 5, fontSize: "20px", color: "#E8DFCA" }}
+                  >
+                    BookingKan
+                  </a>
+                </Row>
+                <Row>
+                  <InstagramOutlined
+                    style={{ fontSize: "18px", color: "#E8DFCA" }}
+                  />
+                  <a
+                    href={item?.contactIG}
+                    style={{ margin: 5, fontSize: "20px", color: "#E8DFCA" }}
+                  >
+                    BookingKan
+                  </a>
+                </Row>
+              </Col>
+
+              <Col xs={24} sm={18} md={12} xl={8} xxl={8}>
+                <Typography style={{ fontSize: "25px", color: "#E8DFCA" }}>
+                  ที่อยู่
+                </Typography>
+              
+                  <Typography style={{ fontSize: "20px", color: "#E8DFCA" }}>
+                    {item?.address}
+                  </Typography>
+              </Col>
             </Row>
-            <Row style={{ justifyContent: "center" }}>
-              <FacebookOutlined style={{ fontSize: "18px" }} />
-              <Typography style={{ margin: 5, fontSize: "16px" }}>
-                BookingKan
-              </Typography>
-            </Row>
-            <Row style={{ justifyContent: "center" }}>
-              <InstagramOutlined style={{ fontSize: "18px" }} />
-              <Typography style={{ margin: 5, fontSize: "16px" }}>
-                BookingKan
-              </Typography>
-            </Row>
-          </Col>
-          <Col sm={2} md={4} xl={8}>
-            <Typography style={{ fontSize: "20px" }}>ที่อยู่</Typography>
-            <Row style={{ justifyContent: "center" }}>
-              <Typography style={{ fontSize: "16px" }}>
-                เลขที่ 70 หมู่ 4 ตำบลหนองบัว อำเภอเมืองกาญจนบุรี
-                จังหวัดกาญจนบุรี 71000
-              </Typography>
-            </Row>
-          </Col>
-        </Row>
+          );
+        })}
       </Footer>
     </Layout>
   );

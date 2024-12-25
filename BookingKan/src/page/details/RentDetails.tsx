@@ -4,27 +4,17 @@ import {
   Descriptions,
   Modal,
   Row,
-  Typography,
-  Image,
-  theme,
-  Steps,
-  Button,
-  message,
-  Form,
-  Input,
-  ConfigProvider,
   DatePicker,
-  TimePicker,
+  Carousel,
 } from "antd";
 import "moment/locale/th";
-import { useState } from "react"
+import { PathImage } from "../../routers/PathImage";
 
-;
 const { Meta } = Card;
 const { RangePicker } = DatePicker;
 
 export const RentDetail = ({ visble, cars, cancel }: any) => {
-  console.log("item", cars);
+  // console.log("itemimageCars", cars.imageCars);
   let statusText;
 
   switch (cars.statusCar) {
@@ -38,6 +28,20 @@ export const RentDetail = ({ visble, cars, cancel }: any) => {
       statusText = "Unknown Status";
   }
 
+  const images = PathImage.image + cars.imageCars;
+  // console.log("imagesCars", images);
+
+  // const onChange = (currentSlide: number) => {
+  //   // console.log(currentSlide);
+  // };
+  const contentStyle: React.CSSProperties = {
+    margin: 0,
+    height: '200px',
+    // color: '#364d79',
+    lineHeight: '200px',
+    textAlign: 'center',
+    // background: '#364d79',
+  };
   return (
     <Modal
       open={visble}
@@ -45,13 +49,29 @@ export const RentDetail = ({ visble, cars, cancel }: any) => {
       footer={null}
       onCancel={() => cancel(false)}
     >
-      <Card style={{margin:30}} title="รายละเอียดรถ">
-        <Row style={{justifyContent:'center',}}>
-          <Col span={24} style={{justifyItems:'center',margin:10,display:'flex'}}>
-            <Image src="https://www.grandprix.co.th/wp-content/uploads/2021/09/%E0%B9%81%E0%B8%99%E0%B8%B0%E0%B8%99%E0%B8%B3-5-%E0%B8%A3%E0%B8%96-%E0%B8%84%E0%B8%A3%E0%B8%AD%E0%B8%9A%E0%B8%84%E0%B8%A3%E0%B8%B1%E0%B8%A7.jpg"/>
+      <Card style={{ margin: 30 }} title="รายละเอียดรถ">
+        <Row style={{ justifyContent: "center" }}>
+          <Col
+            span={24}
+            // style={{ justifyItems: "center", margin: 10, display: "flex" }}
+          >
+            <Carousel  draggable >
+            {cars.imageCars.map((itemImg: any) => (
+                <div style={{width:400,height:200}} >
+                  <img
+                    src={PathImage.image + itemImg.image}
+                  style={{objectFit:'cover',objectPosition:'50% 50%',height:'100%',width:'100%'}}
+                  />
+                   {/* <Image src={PathImage.image + itemImg.image}/> */}
+                </div>
+              ))}
+           
+              
+            </Carousel>
+           
           </Col>
           <Col span={24}>
-            <Descriptions >
+            <Descriptions>
               <Descriptions.Item label="แบนด์รถ">
                 {cars.carBrand}
               </Descriptions.Item>
@@ -70,9 +90,7 @@ export const RentDetail = ({ visble, cars, cancel }: any) => {
               <Descriptions.Item label="รายละเอียดรถ">
                 {cars.detailCar}
               </Descriptions.Item>
-              <Descriptions.Item label="สถานะ">
-                {statusText}
-              </Descriptions.Item>
+              <Descriptions.Item label="สถานะ">{statusText}</Descriptions.Item>
             </Descriptions>
           </Col>
         </Row>

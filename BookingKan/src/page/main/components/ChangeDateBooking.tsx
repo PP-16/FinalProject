@@ -1,44 +1,38 @@
 import {
   Button,
   Card,
-  Checkbox,
-  CheckboxProps,
   Col,
   DatePicker,
   Form,
   Row,
   Space,
-  Typography,
   notification,
 } from "antd";
-import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { SeatBookedLayout } from "./SeatBooked";
-import { useAppDispatch } from "../../../api/redux/Store/configureStore";
+import {
+  useAppDispatch,
+  useAppSelector,
+} from "../../../api/redux/Store/configureStore";
 import {
   CheckSeatEmptyAsync,
   CheckSeatPendingAsync,
   updateDateBookingAsync,
 } from "../../../api/redux/Slice/BookingSlice";
-import { Booking } from "../../../api/models/Booking";
 import moment from "moment";
+import { PathPublicRouter } from "../../../routers/PathAllRoute";
 
 export const ChangeDateBooking = () => {
   const props = useLocation();
   const data = props.state;
   const [formData, setFormData] = useState({});
   const [open, setOpen] = useState(false);
-  const [modalsSeat, setModalsSeat] = useState(true);
-  console.log("dataCheck", data);
-
+  const [modalsSeat, setModalsSeat] = useState(false);
+  const bookingData = useAppSelector((t) => t.booking.booked);
   const dispatch = useAppDispatch();
+  const navigate = useNavigate()
   //#region checkSeat
-
-  const [selectedSeat, setSelectedSeat] = useState<string[]>(data.seatNumbers);
-  const handleSelectedSeatChange = (updatedSeats: string[]) => {
-    setSelectedSeat(updatedSeats);
-  };
-  // console.log("sseee", selectedSeat);
 
   const ID = data.itineraryId;
 
@@ -63,13 +57,21 @@ export const ChangeDateBooking = () => {
 
   useEffect(() => {
     checkSeat();
-  }, []);
-  //#endregion
+  }, [checkSeat]);
 
+  const [selectedSeat, setSelectedSeat] = useState<string[]>(data.seatNumbers);
+  const handleSelectedSeatChange = (updatedSeats: string[]) => {
+    setSelectedSeat(updatedSeats);
+  };
+  // console.log("sseee", selectedSeat);
+
+  
+  //#endregion
+  const { DateBooking }: any = formData;
   //#region  updateHandels
   const handleFormSubmitฺBooking = async () => {
-    const { DateBooking }: any = formData;
-    console.log("DateBooking", DateBooking );
+ 
+    console.log("DateBooking", DateBooking);
 
     if (!DateBooking) {
       notification.warning({
@@ -80,30 +82,31 @@ export const ChangeDateBooking = () => {
     }
     checkSeatNew(DateBooking);
     setModalsSeat(true);
-  
-    // if (selectedSeat != null)
-    // const NewSeat = [];
-    // selectedSeat != null ? NewSeat == selectedSeat : null;
+
   };
 
-const handelUpdateDate =async () => {
-  const { DateBooking }: any = formData;
-  const dateBooking = moment(DateBooking.$d).format(
-    "YYYY-MM-DDTHH:mm:ss"
-  );
-  try {
-    const bookingDto: Booking = {
-      dateAtBooking: dateBooking,
-      seatNumbers: selectedSeat.map((item) => item.toString()),
-      itineraryId: data.bookingId,
-    };
-    console.log("bDTo", bookingDto);
+  const handelUpdateDate = async () => {
+    const { DateBooking }: any = formData;
+    const dateBooking = moment(DateBooking.$d).format("YYYY-MM-DDTHH:mm:ss");
+    try {
+      const bookingDto = {
+        dateAtBooking: dateBooking,
+        seatNumbers: selectedSeat.map((item) => item.toString()),
+        itineraryId: data.bookingId,
+        note: data.note,
+      };
+      console.log("bDTo", bookingDto);
 
-    await dispatch(updateDateBookingAsync(bookingDto));
-  } catch (error) {
-    console.log(error);
-  }
-}
+      await dispatch(updateDateBookingAsync(bookingDto)).then(() =>
+       { 
+        checkSeatNew(dateBooking);
+        navigate(PathPublicRouter.accountPage)
+       }
+      );
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   const checkSeatNew = async (newDateBooking: any) => {
     try {
@@ -166,7 +169,7 @@ const handelUpdateDate =async () => {
             >
               เลือกวันที่
             </Button>
-          </Col> 
+          </Col>
         </Row>
       </Card>
       {modalsSeat == true && (
@@ -192,7 +195,6 @@ const handelUpdateDate =async () => {
           เลือนวันที่จอง
         </Button>
       </Row>
-      
     </Space>
   );
 };

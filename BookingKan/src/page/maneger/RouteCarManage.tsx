@@ -7,12 +7,19 @@ import {
   Input,
   InputRef,
   Modal,
+  Row,
   Space,
+  Switch,
   Table,
   message,
   notification,
 } from "antd";
-import { ExclamationCircleFilled, SearchOutlined } from "@ant-design/icons";
+import {
+  CheckOutlined,
+  CloseOutlined,
+  ExclamationCircleFilled,
+  SearchOutlined,
+} from "@ant-design/icons";
 import Highlighter from "react-highlight-words";
 import { RouteCar } from "../../api/models/RouetCar";
 import { ColumnType } from "antd/es/table";
@@ -20,6 +27,7 @@ import { FieldValues } from "react-hook-form";
 import { useAppDispatch } from "../../api/redux/Store/configureStore";
 import {
   createRouteAsync,
+  updateIsUseRouteAsync,
   updateRouteAsync,
 } from "../../api/redux/Slice/RouteCarSlice";
 import { FilterConfirmProps } from "antd/es/table/interface";
@@ -42,19 +50,47 @@ export const RouteCars = () => {
   const { confirm } = Modal;
   const [form] = Form.useForm();
   const dispatch = useAppDispatch();
-  const [modals, setModal] = useState(false);
+  const [modals, setModal] = useState<any>(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const [dataEdit, setDataEdit] = useState<any>([]);
   useEffect(() => {
     agent.RoustCars.getRoute().then((route) => setRouteCar(route));
   }, []);
+
+  console.log("dataEdit", dataEdit);
+
+  useEffect(() => {
+    if (modals || isModalOpen) {
+      if (dataEdit.key === undefined) {
+        form.setFieldsValue({
+          routeCarsId: null,
+          originName: null,
+          destinationName: null,
+          isUse: null,
+        });
+      } else {
+        form.setFieldsValue({
+          routeCarsId: dataEdit.key,
+          originName: dataEdit.originName,
+          destinationName: dataEdit.destinationName,
+          isUse: dataEdit.isUse,
+        });
+      }
+    }
+  }, [modals, form, dataEdit, isModalOpen]);
 
   //#region  createDriver
   const handleOk = () => {
     setIsModalOpen(false);
   };
+  const handleEdit = (data: any) => {
+    setDataEdit(data);
+    setModal(true);
+  };
   const handleCancel = () => {
     setIsModalOpen(false);
+    setModal(false);
+    setDataEdit([]);
   };
   const onFinish = async ({ originName, destinationName }: FieldValues) => {
     try {
@@ -63,19 +99,11 @@ export const RouteCars = () => {
           originName,
           destinationName,
         })
-      ).then((action: any) => {
-        if (createRouteAsync.fulfilled.match(action)) {
-          message.success("Submit success!");
-          window.location.reload();
-          setModal(false);
-        }
-        if (createRouteAsync.rejected.match(action)) {
-          notification.error({
-            message: `Submit failed!`,
-            description: "Please Check you anser agian!!",
-            placement: "top",
-          });
-        }
+      ).then(() => {
+        agent.RoustCars.getRoute().then((route) => setRouteCar(route));
+        setIsModalOpen(false);
+        setDataEdit([]);
+        form.resetFields();
       });
     } catch (error) {
       console.log(error);
@@ -93,15 +121,16 @@ export const RouteCars = () => {
 
   const showDeleteConfirm = (record: any) => {
     confirm({
-      title: "Are you sure delete this task?",
+      title: "ต้องการลบเส้นทางนี้?",
       icon: <ExclamationCircleFilled />,
-      content: "Some descriptions",
-      okText: "Yes",
+      content: "กรุณาตรวจสอบให้แน่ใจว่าคุณต้องการลบเส้นทางนี้",
+      okText: "ตกลง",
       okType: "danger",
-      cancelText: "No",
+      cancelText: "ไม่ ขอบคุณ",
       onOk() {
-        agent.RoustCars.delete(record.key);
-        window.location.reload();
+        agent.RoustCars.delete(record.key).then(() => {
+          agent.RoustCars.getRoute().then((route) => setRouteCar(route));
+        });
       },
       onCancel() {
         console.log("Cancel");
@@ -110,31 +139,27 @@ export const RouteCars = () => {
   };
 
   const update = async ({
-    routeCarsId,
+    // routeCarsId,
     originName,
     destinationName,
   }: FieldValues) => {
     try {
+      const routeCarsId = dataEdit.key
       console.log("routs", routeCarsId, originName, destinationName);
+
       await dispatch(
         updateRouteAsync({
           routeCarsId,
           originName,
           destinationName,
         })
-      ).then((action: any) => {
-        if (updateRouteAsync.fulfilled.match(action)) {
-          message.success("Submit success!");
-        }
-        if (updateRouteAsync.rejected.match(action)) {
-          notification.error({
-            message: `Submit failed!`,
-            description: "Please Check you anser agian!!",
-            placement: "top",
-          });
-        }
+      ).then(() => {
+        agent.RoustCars.getRoute().then((route) => setRouteCar(route));
+        setModal(false);
+        setDataEdit([]);
+        form.resetFields();
       });
-      window.location.reload();
+      // window.location.reload();
     } catch (error: any) {
       console.log("e", error);
     }
@@ -163,7 +188,7 @@ export const RouteCars = () => {
         disabled={!submittable}
         onClick={() => update(form)}
       >
-        Submit
+        ตกลง
       </Button>
     );
   };
@@ -292,10 +317,39 @@ export const RouteCars = () => {
       ...getColumnSearchProps("destinationName"),
     },
     {
+      title: "เปิดใช้งาน",
+      dataIndex: "isUse",
+      key: "isUse",
+      render: (record: boolean, text: any) => {
+        const onChange = (checked: boolean) => {
+          // console.log("เปลี่ยนแปลงแล้ว:", checked, "Record Key:", text.key);
+          const Id = text.key;
+          const isUse = checked;
+          dispatch(updateIsUseRouteAsync({ Id, isUse }));
+        };
+        // console.log("record", record);
+
+        return (
+          <>
+            <Switch
+              checkedChildren={<CheckOutlined />}
+              unCheckedChildren={<CloseOutlined />}
+              onChange={onChange}
+              defaultChecked={record}
+            />
+          </>
+        );
+      },
+    },
+    {
       title: "แก้ไข",
       key: "operation",
-      render: (text: any, record: any) => (
-        <Button type="dashed" onClick={() => setModal(record)}>
+      render: (_: any, record: any) => (
+        <Button
+          type="dashed"
+          style={{ backgroundColor: "#faad14" }}
+          onClick={() => handleEdit(record)}
+        >
           แก้ไข
         </Button>
       ),
@@ -304,7 +358,7 @@ export const RouteCars = () => {
     {
       title: "ลบ",
       key: "operation",
-      render: (text: any, record: any) => (
+      render: (_: any, record: any) => (
         <Button
           style={{ color: "whitesmoke", backgroundColor: "red" }}
           onClick={() => showDeleteConfirm(record)}
@@ -316,27 +370,39 @@ export const RouteCars = () => {
     },
   ];
 
+  const onCancleModal = () => {
+    setModal(false);
+    form.resetFields();
+  };
   const data = routeCar.map((item) => {
     // console.log("item",item)
     return {
       key: item.routeCarsId,
       originName: item.originName,
       destinationName: item.destinationName,
+      isUse: item.isUse,
     };
   });
   //#endregion
 
   return (
     <>
-      <Button type="primary" onClick={showModal}>
-        Add Driver
-      </Button>
+      <Row style={{ justifyContent: "flex-end", margin: 10 }}>
+        <Button
+          type="primary"
+          style={{ backgroundColor: "#4F6F52" }}
+          onClick={showModal}
+        >
+          เพิ่มเส้นทาง
+        </Button>
+      </Row>
+
       <Modal
-        title="Add Driver"
+        title="เพิ่มเส้นทาง"
         open={isModalOpen}
         onOk={handleOk}
         onCancel={handleCancel}
-        width={1000}
+        footer={null}
       >
         <Form
           {...layout}
@@ -345,31 +411,31 @@ export const RouteCars = () => {
           onFinish={onFinish}
           style={{ maxWidth: 600 }}
         >
-          <Form.Item name="originName" label="originName">
+          <Form.Item name="originName" label="สถานที่ต้นทาง">
             <Input />
           </Form.Item>
 
-          <Form.Item name="destinationName" label="destinationName">
+          <Form.Item name="destinationName" label="สถานที่ปลายทาง">
             <Input />
           </Form.Item>
           <Form.Item {...tailLayout}>
             <Button type="primary" htmlType="submit">
-              Submit
+              ตกลง
             </Button>
             <Button htmlType="button" onClick={onReset}>
-              Reset
+              ล้าง
             </Button>
           </Form.Item>
         </Form>
       </Modal>
 
-      {modals && (
+      {dataEdit && (
         <Modal
-          title="Edit RouteCar"
+          title="แก้ไขเส้นทาง"
           centered
-          visible={modals}
-          onOk={() => setModal(false)}
-          onCancel={() => setModal(false)}
+          open={modals}
+          footer={false}
+          onCancel={handleCancel}
         >
           <Form
             form={form}
@@ -378,25 +444,21 @@ export const RouteCars = () => {
             autoComplete="off"
             onFinish={update}
           >
-            <Form.Item
-              initialValue={modals.key}
-              name="routeCarsId"
-              label="routeCarsId"
-            >
+            {/* <Form.Item initialValue={dataEdit?.key} name="key" label="รหัสเส้นทาง">
               <Input disabled />
-            </Form.Item>
+            </Form.Item> */}
             <Form.Item
-              initialValue={modals.originName}
+              initialValue={dataEdit?.originName}
               name="originName"
-              label="originName"
+              label="สถานที่ต้นทาง"
             >
               <Input />
             </Form.Item>
 
             <Form.Item
-              initialValue={modals.destinationName}
+              initialValue={dataEdit?.destinationName}
               name="destinationName"
-              label="destinationName"
+              label="สถานที่ปลายทาง"
             >
               <Input />
             </Form.Item>
@@ -404,14 +466,14 @@ export const RouteCars = () => {
             <Form.Item>
               <Space>
                 <SubmitButton form={form} />
-                <Button htmlType="reset">Reset</Button>
+                <Button htmlType="reset">ล้าง</Button>
               </Space>
             </Form.Item>
           </Form>
         </Modal>
       )}
 
-      <Table columns={columns} dataSource={data} />
+      <Table scroll={{ x: 1300 }} columns={columns} dataSource={data} />
     </>
   );
 };

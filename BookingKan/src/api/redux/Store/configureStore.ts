@@ -7,6 +7,9 @@ import { ItinerarySlice } from "../Slice/ItinerarySlice";
 import { AccountSlice } from "../Slice/AccountSlice";
 import { BookingsSlice } from "../Slice/BookingSlice";
 import { OrderRentSlice } from "../Slice/OrderRentSlice";
+import { PaymentSlice } from "../Slice/PaymentSlice";
+import { NewsSlice } from "../Slice/NewsSlice";
+import { SystemSlice } from "../Slice/SystemSlice";
 
 export const store = configureStore({
     reducer: {
@@ -17,6 +20,9 @@ export const store = configureStore({
         account : AccountSlice.reducer,
         booking : BookingsSlice.reducer,
         order:OrderRentSlice.reducer,
+        payment:PaymentSlice.reducer,
+        news:NewsSlice.reducer,
+        system:SystemSlice.reducer,
     }
 })
   

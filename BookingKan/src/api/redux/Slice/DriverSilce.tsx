@@ -2,14 +2,15 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { Drivers } from "../../models/Drivers";
 import agent from "../../agent";
 import { FieldValues } from "react-hook-form";
+import { message, notification } from "antd";
 
 interface DriverState {
-  driver: Drivers | null;
+  driver: Drivers | [];
   loading: boolean;
   error: null;
 }
 const initialState: DriverState = {
-  driver: null,
+  driver: [],
   loading: false,
   error: null,
 };
@@ -48,7 +49,7 @@ export const updateDriverAsync = createAsyncThunk<Drivers, FieldValues>(
         charges: drivers.charges,
         address: drivers.address,
         phone: drivers.phone,
-        statusDriver: drivers. statusDriver,
+        statusDriver: drivers.statusDriver,
       });
       console.log("responsecrateDri", DriverDto);
       return DriverDto;
@@ -59,13 +60,15 @@ export const updateDriverAsync = createAsyncThunk<Drivers, FieldValues>(
   }
 );
 
-
 export const searchBychargeAsync = createAsyncThunk<Drivers, FieldValues>(
   "charge/searchBychargeAsync",
   async (charge, thunkAPI) => {
     try {
       console.log("chargeDri", charge);
-      const ChargeDto = await agent.Drivers.getByChage(charge.min,charge.max)
+      const ChargeDto = await agent.Drivers.getByChage(
+        charge.minPrice,
+        charge.maxPrice
+      );
       console.log("responsecrateCharge", ChargeDto);
       return ChargeDto;
     } catch (error: any) {
@@ -74,7 +77,6 @@ export const searchBychargeAsync = createAsyncThunk<Drivers, FieldValues>(
     }
   }
 );
-
 
 export const updateIsUseDriverAsync = createAsyncThunk<Drivers, FieldValues>(
   "drivers/updateIsUseDriverAsync",
@@ -93,7 +95,6 @@ export const updateIsUseDriverAsync = createAsyncThunk<Drivers, FieldValues>(
     }
   }
 );
-
 
 export const DriverSlice = createSlice({
   name: "drivers",
@@ -124,6 +125,18 @@ export const DriverSlice = createSlice({
         state.loading = false;
       })
       .addCase(updateDriverAsync.rejected, (state: any, action) => {
+        state.loading = false;
+        state.error = action.error.message || "feiled to update";
+      })
+      .addCase(searchBychargeAsync.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(searchBychargeAsync.fulfilled, (state, action) => {
+        state.loading = false;
+        state.driver = action.payload;
+      })
+      .addCase(searchBychargeAsync.rejected, (state: any, action) => {
         state.loading = false;
         state.error = action.error.message || "feiled to update";
       });

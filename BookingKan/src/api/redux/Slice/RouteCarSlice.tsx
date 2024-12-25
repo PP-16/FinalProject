@@ -5,12 +5,25 @@ import agent from "../../agent";
 
 
 interface RouteCarState  {
-    routeCars : RouteCar | null,
+    routeCars : RouteCar[] | [],
+    loading: boolean;
+    error: null;
 }
 
 const initialState : RouteCarState = {
-    routeCars : null
+    routeCars : [],
+    loading: false,
+    error: null,
 }
+
+export const fetchRouteCars = createAsyncThunk(
+  "route/fetchRouteCars",
+  async () => {
+    const response = await agent.RoustCars.getRoute();
+    return response;
+  }
+);
+
 export const createRouteAsync = createAsyncThunk<RouteCar, FieldValues>(
   "route/createRouteAsync",
   async (route, thunkAPI) => {
@@ -77,17 +90,43 @@ export const updateRouteAsync = createAsyncThunk<RouteCar, FieldValues>(
     },
     extraReducers: (builder) => {
       builder
+
+      .addCase(fetchRouteCars.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchRouteCars.fulfilled, (state, action:any) => {
+        state.loading = false;
+        state.routeCars = action.payload;
+      })
+      .addCase(fetchRouteCars.rejected, (state: any, action) => {
+        state.loading = false;
+        state.error = action.error.message || "feiled to update";
+      })
+
         .addCase(updateRouteAsync.pending, (state) => {
+          state.loading = true;
+          state.error = null;
         })
         .addCase(updateRouteAsync.fulfilled, (state) => {
+          state.loading = false;
         })
         .addCase(updateRouteAsync.rejected, (state: any, action) => {
+          state.loading = false;
+          state.error = action.error.message || "feiled to update";
         })
+
         .addCase(createRouteAsync.pending, (state) => {
+          state.loading = true;
+          state.error = null;
         })
         .addCase(createRouteAsync.fulfilled, (state) => {
+          state.loading = false;
+        
         })
         .addCase(createRouteAsync.rejected, (state: any, action) => {
+          state.loading = false;
+          state.error = action.error.message || "feiled to update";
         });
     },
   });

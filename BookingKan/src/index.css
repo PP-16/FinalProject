@@ -21,3 +21,47 @@ body{
     top: 0;
     text-align: left;
   }
+
+  @media (max-width: 1150px) {
+    .headerMenu {
+      display: none;
+    }
+    .webName {
+      font-size: medium;
+    }
+    .menuIcon {
+      position: static;
+      display: flex;
+      align-items: center;
+    }
+  }
+  
+  @media (min-width: 1150px) {
+    .menuIcon {
+      display: none;
+    }
+    .headerMenu {
+      display: flex;
+    }
+  }
+
+/* Example CSS for responsive chart */
+.chart-container {
+  width: 100%; /* Set container width to fill its parent */
+}
+
+/* Adjust chart size for smaller screens */
+@media (max-width: 768px) {
+  .chart-container {
+    height: 300px; /* Adjust height for smaller screens */
+  }
+}
+/* ขนาดและสีของเส้นกรอบด้านนอก */
+/* .custom-table .ant-table {
+  border: 2px solid #000; 
+} */
+
+.custom-table .ant-table-thead > tr > th, 
+.custom-table .ant-table-tbody > tr > td {
+  border: 1px solid #000;}
+   /* ขนาดและสีของเส้นกรอบภายใน */

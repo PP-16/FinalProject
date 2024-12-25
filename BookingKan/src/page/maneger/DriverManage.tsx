@@ -5,6 +5,7 @@ import {
   Input,
   InputRef,
   Modal,
+  Row,
   Select,
   Space,
   Switch,
@@ -22,12 +23,14 @@ import {
   updateDriverAsync,
   updateIsUseDriverAsync,
 } from "../../api/redux/Slice/DriverSilce";
-import {
-  ColumnType,
-  FilterConfirmProps,
-} from "antd/es/table/interface";
+import { ColumnType, FilterConfirmProps } from "antd/es/table/interface";
 import Highlighter from "react-highlight-words";
-import { CheckOutlined, CloseOutlined, ExclamationCircleFilled, SearchOutlined } from "@ant-design/icons";
+import {
+  CheckOutlined,
+  CloseOutlined,
+  ExclamationCircleFilled,
+  SearchOutlined,
+} from "@ant-design/icons";
 
 const layout = {
   labelCol: { span: 8 },
@@ -49,17 +52,26 @@ export const Driver = () => {
   const searchInput = useRef<InputRef>(null);
   type DataIndex = keyof Drivers;
   const [modals, setModal] = useState(false);
+  const [dataModals, setDataModals] = useState<any>([]);
+
+  const handleModalEdit = (data: any) => {
+    setModal(true);
+    setDataModals(data);
+  };
   const { confirm } = Modal;
   //#region  createDriver
   const handleChangeStatus = (value: any) => {
-    console.log(`selectedStatus ${value}`);
+    // console.log(`selectedStatus ${value}`);
     setStatusDriver(value);
   };
   const handleOk = () => {
     setIsModalOpen(false);
   };
   const handleCancel = () => {
+    setModal(false);
     setIsModalOpen(false);
+    form.resetFields();
+    setDataModals([]);
   };
   const onFinish = async ({
     driverName,
@@ -79,19 +91,12 @@ export const Driver = () => {
           phone,
           statusDriver,
         })
-      ).then((action: any) => {
-        if (createDriverAsync.fulfilled.match(action)) {
-          message.success("Submit success!");
-          window.location.reload();
-          setModal(false);
-        }
-        if (createDriverAsync.rejected.match(action)) {
-          notification.error({
-            message: `Submit failed!`,
-            description: "Please Check you anser agian!!",
-            placement: "top",
-          });
-        }
+      ).then(() => {
+        form.resetFields();
+        setDataModals([]);
+        agent.Drivers.getDriver().then((driver) => setDriver(driver));
+        setIsModalOpen(false);
+        setModal(false);
       });
     } catch (error) {
       console.log(error);
@@ -121,7 +126,10 @@ export const Driver = () => {
     setSearchText("");
   };
 
-  const getColumnSearchProps = (dataIndex: DataIndex): ColumnType<Drivers> => ({
+  const getColumnSearchProps = (
+    dataIndex: DataIndex,
+    textPlaceholder: any
+  ): ColumnType<Drivers> => ({
     filterDropdown: ({
       setSelectedKeys,
       selectedKeys,
@@ -132,7 +140,7 @@ export const Driver = () => {
       <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
         <Input
           ref={searchInput}
-          placeholder={`Search ${dataIndex}`}
+          placeholder={`Search ${textPlaceholder}`}
           value={selectedKeys[0]}
           onChange={(e) =>
             setSelectedKeys(e.target.value ? [e.target.value] : [])
@@ -215,38 +223,51 @@ export const Driver = () => {
       title: "ชื่อคนขับ",
       dataIndex: "driverName",
       key: "driverName",
-      ...getColumnSearchProps("driverName"),
+      ...getColumnSearchProps("driverName", "ชื่อคนขับ"),
     },
     {
       title: "หมายเลขบัตรประชาชน",
       dataIndex: "idCardNumber",
       key: "idCardNumber",
+      ...getColumnSearchProps("idCardNumber", "หมายเลขบัตรประชาชน"),
     },
     {
       title: "ค่าจ้าง",
       dataIndex: "charges",
       key: "charges",
-      sorter: true,
-      // sorter: (a, b) => a.charges.length - b.charges.length,
-      ...getColumnSearchProps("charges"),
+      // sorter: true,
+      sorter: (a: any, b: any) => a.charges - b.charges,
+      ...getColumnSearchProps("charges", "ค่าจ้าง"),
     },
     {
       title: "เบอร์โทรศัพท์",
       dataIndex: "phone",
       key: "phone",
+      ...getColumnSearchProps("phone", "เบอร์โทรศัพท์"),
     },
     {
       title: "ที่อยู่ปัจจุบัน",
       dataIndex: "address",
       key: "address",
-      ...getColumnSearchProps("address"),
-
-      sortDirections: ["descend", "ascend"],
+      ...getColumnSearchProps("address", "ที่อยู่ปัจจุบัน"),
     },
     {
       title: "สถานะ",
       dataIndex: "statusDriver",
       key: "statusDriver",
+      filters: [
+        {
+          text: "ว่าง",
+          value: "ว่าง",
+        },
+        {
+          text: "ไม่ว่าง",
+          value: "ไม่ว่าง",
+        },
+      ],
+      onFilter: (value: string, record: any) =>
+        record.statusDriver.startsWith(value),
+      filterSearch: true,
     },
     {
       title: "เปิดใช้งาน",
@@ -254,13 +275,13 @@ export const Driver = () => {
       key: "isUse",
       render: (record: boolean, text: any) => {
         const onChange = (checked: boolean) => {
-          console.log("เปลี่ยนแปลงแล้ว:", checked, "Record Key:", text.key);
+          // console.log("เปลี่ยนแปลงแล้ว:", checked, "Record Key:", text.key);
           const Id = text.key;
           const isUse = checked;
-           dispatch(updateIsUseDriverAsync({ Id, isUse }));
+          dispatch(updateIsUseDriverAsync({ Id, isUse }));
         };
-        console.log("record",record);
-        
+        // console.log("record", record);
+
         return (
           <>
             <Switch
@@ -276,17 +297,20 @@ export const Driver = () => {
     {
       title: "แก้ไข",
       key: "operation",
-      render: (text: any, record: any) => (
-        <Button type="dashed" onClick={() => setModal(record)}>
+      render: (_: any, record: any) => (
+        <Button
+          type="dashed"
+          style={{ backgroundColor: "#faad14" }}
+          onClick={() => handleModalEdit(record)}
+        >
           แก้ไข
         </Button>
       ),
-      width: 100,
     },
     {
       title: "ลบ",
       key: "operation",
-      render: (text: any, record: any) => (
+      render: (_: any, record: any) => (
         <Button
           style={{ color: "whitesmoke", backgroundColor: "red" }}
           onClick={() => showDeleteConfirm(record)}
@@ -294,11 +318,10 @@ export const Driver = () => {
           ลบ
         </Button>
       ),
-      width: 100,
     },
   ];
 
-  const data = driver.map((item) => {
+  const data: any = driver.map((item: any) => {
     const status = item.statusDriver;
     // console.log("dristatus",status)
     if (status == 0) {
@@ -310,7 +333,7 @@ export const Driver = () => {
         charges: item.charges,
         phone: item.phone,
         statusDriver: "ว่าง",
-        isUse:item.isUse
+        isUse: item.isUse,
       };
     }
     if (status == 1) {
@@ -322,13 +345,42 @@ export const Driver = () => {
         charges: item.charges,
         phone: item.phone,
         statusDriver: "ไม่ว่าง",
-        isUse:item.isUse
+        isUse: item.isUse,
       };
     }
   });
 
-  console.log("modal", modals);
   //#endregion
+
+  console.log("dataModals.key", dataModals.key);
+
+  useEffect(() => {
+    if (modals || isModalOpen) {
+      if (dataModals.key === undefined) {
+        form.setFieldsValue({
+          key: "" || null,
+          driverName: "" || null,
+          idCardNumber: "" || null,
+          address: "" || null,
+          charges: "" || null,
+          phone: "" || null,
+          statusDriver: "" || null,
+          isUse: "" || null,
+        });
+      } else {
+        form.setFieldsValue({
+          key: dataModals?.driverId,
+          driverName: dataModals?.driverName,
+          idCardNumber: dataModals?.idCardNumber,
+          address: dataModals?.address,
+          charges: dataModals?.charges,
+          phone: dataModals?.phone,
+          statusDriver: dataModals?.statusDriver,
+          isUse: dataModals?.isUse,
+        });
+      }
+    }
+  }, [dataModals, form, modals, isModalOpen]);
 
   //#region update
 
@@ -341,8 +393,11 @@ export const Driver = () => {
       okType: "danger",
       cancelText: "No",
       onOk() {
-        agent.Drivers.delete(record.key)
-        window.location.reload()
+        agent.Drivers.delete(record.key).then(() => {
+          agent.Drivers.getDriver().then((driver) => setDriver(driver));
+        });
+
+        // window.location.reload();
       },
       onCancel() {
         console.log("Cancel");
@@ -350,7 +405,7 @@ export const Driver = () => {
     });
   };
   const update = async ({
-    driverId,
+    // driverId,
     driverName,
     idCardNumber,
     charges,
@@ -359,6 +414,12 @@ export const Driver = () => {
     statusDriver,
   }: FieldValues) => {
     try {
+      const driverId = dataModals?.key;
+      if (driverId === undefined) {
+        driverId == 0;
+      }
+      statusDriver = "ว่าง" ? 0 : 1
+
       await dispatch(
         updateDriverAsync({
           driverId,
@@ -369,19 +430,12 @@ export const Driver = () => {
           phone,
           statusDriver,
         })
-      ).then((action: any) => {
-        if (updateDriverAsync.fulfilled.match(action)) {
-          message.success("Submit success!")
-        }
-        if (updateDriverAsync.rejected.match(action)) {
-          notification.error({
-            message: `Submit failed!`,
-            description: "Please Check you anser agian!!",
-            placement: "top",
-          });
-        }
+      ).then(async() => {
+      await  agent.Drivers.getDriver().then((driver) => setDriver(driver));
+        setDataModals([]);
       });
-      window.location.reload()
+      setModal(false)
+      // window.location.reload();
     } catch (error: any) {
       console.log("e", error);
     }
@@ -408,9 +462,9 @@ export const Driver = () => {
         type="primary"
         htmlType="submit"
         disabled={!submittable}
-        onClick={() => update(form)}
+        // onClick={() => update(form)}
       >
-        Submit
+        ตกลง
       </Button>
     );
   };
@@ -422,11 +476,18 @@ export const Driver = () => {
 
   return (
     <>
-      <Button type="primary" onClick={showModal}>
-        Add Driver
-      </Button>
+      <Row style={{ justifyContent: "flex-end", margin: 10 }}>
+        <Button
+          type="primary"
+          style={{ backgroundColor: "#4F6F52" }}
+          onClick={showModal}
+        >
+          เพิ่มคนขับรถ
+        </Button>
+      </Row>
+
       <Modal
-        title="Add Driver"
+        title="เพิ่มคนขับรถ"
         open={isModalOpen}
         onOk={handleOk}
         onCancel={handleCancel}
@@ -439,27 +500,27 @@ export const Driver = () => {
           onFinish={onFinish}
           style={{ maxWidth: 600 }}
         >
-          <Form.Item name="driverName" label="driverName">
+          <Form.Item name="driverName" label="ชื่อคนขับ">
             <Input />
           </Form.Item>
 
-          <Form.Item name="idCardNumber" label="idCardNumber">
+          <Form.Item name="idCardNumber" label="หมายเลขบัตรประชาชน">
             <Input />
           </Form.Item>
 
-          <Form.Item name="charges" label="charges">
+          <Form.Item name="charges" label="ค่าจ้าง / วัน">
             <Input />
           </Form.Item>
 
-          <Form.Item name="address" label="address">
+          <Form.Item name="address" label="ที่อยู่">
             <Input />
           </Form.Item>
 
-          <Form.Item name="phone" label="phone">
+          <Form.Item name="phone" label="เบอร์โทรศัพท์">
             <Input />
           </Form.Item>
 
-          <Form.Item name="statusDriver" label="statusDriver">
+          {/* <Form.Item name="statusDriver" label="statusDriver">
             <Select
               value={{ key: statusDriver }}
               style={{ width: 200 }}
@@ -470,7 +531,7 @@ export const Driver = () => {
                 { value: 1, label: "ไม่ว่าง" },
               ]}
             />
-          </Form.Item>
+          </Form.Item> */}
 
           <Form.Item {...tailLayout}>
             <Button type="primary" htmlType="submit">
@@ -483,13 +544,14 @@ export const Driver = () => {
         </Form>
       </Modal>
 
-      {modals && (
+      {dataModals && (
         <Modal
-          title="Edit Driver"
+          title="แก้ไขข้อมูลคนขับรถ"
           centered
-          visible={modals}
+          open={modals}
           onOk={() => setModal(false)}
-          onCancel={() => setModal(false)}
+          onCancel={handleCancel}
+          footer={null}
         >
           <Form
             form={form}
@@ -498,46 +560,50 @@ export const Driver = () => {
             autoComplete="off"
             onFinish={update}
           >
-            <Form.Item
-              initialValue={modals.key}
+            {/* <Form.Item
+              initialValue={dataModals.key}
               name="driverId"
-              label="driverId"
+              label="รหัสคนขับ"
+            >
+              <Input disabled />
+            </Form.Item> */}
+            <Form.Item
+              initialValue={dataModals?.driverName}
+              name="driverName"
+              label="ชื่อคนขับ"
+            >
+              <Input />
+            </Form.Item>
+
+            <Form.Item
+              initialValue={dataModals?.idCardNumber}
+              name="idCardNumber"
+              label="หมายเลขบัตรประชาชน"
             >
               <Input disabled />
             </Form.Item>
-            <Form.Item
-              initialValue={modals.driverName}
-              name="driverName"
-              label="driverName"
-            >
-              <Input />
-            </Form.Item>
 
             <Form.Item
-              initialValue={modals.idCardNumber}
-              name="idCardNumber"
-              label="idCardNumber"
-            >
-              <Input disabled/>
-            </Form.Item>
-
-            <Form.Item
-              initialValue={modals.charges}
+              initialValue={dataModals?.charges}
               name="charges"
-              label="charges"
+              label="ค่าจ้าง / วัน"
             >
               <Input />
             </Form.Item>
 
             <Form.Item
-              initialValue={modals.address}
+              initialValue={dataModals?.address}
               name="address"
-              label="address"
+              label="ที่อยู่"
             >
               <Input />
             </Form.Item>
 
-            <Form.Item initialValue={modals.phone} name="phone" label="phone">
+            <Form.Item
+              initialValue={dataModals?.phone}
+              name="phone"
+              label="เบอร์โทรศัพท์"
+            >
               <Input />
             </Form.Item>
 
@@ -557,13 +623,13 @@ export const Driver = () => {
             <Form.Item>
               <Space>
                 <SubmitButton form={form} />
-                <Button htmlType="reset">Reset</Button>
+                <Button htmlType="reset">ล้าง</Button>
               </Space>
             </Form.Item>
           </Form>
         </Modal>
       )}
-      <Table columns={columns} dataSource={data} />
+      <Table columns={columns} dataSource={data} scroll={{ x: 1300 }} />
     </>
   );
 };

@@ -18,5 +18,4 @@ export interface ClassCar{
     classCarsId:number;
     className:string;
     price:number;
-    isUse:boolean
 }

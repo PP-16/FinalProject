@@ -4,10 +4,9 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  // server: {
-  //   https: {
-  //     key: require('fs').readFileSync('localhost.key'),
-  //     cert: require('fs').readFileSync('localhost.crt'),
-  //   },
-  // },
+
+  build: {
+    outDir: "../../BookinKanAPI/BookinKanAPI/wwwroot" 
+},
+
 })

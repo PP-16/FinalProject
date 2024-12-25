@@ -47,7 +47,7 @@ export const ChangPassword = () => {
         disabled={!submittable}
         onClick={handleSubmit}
       >
-        Submit
+        เปลี่ยนรหัสผ่าน
       </Button>
     );
   };
@@ -136,11 +136,11 @@ export const ChangPassword = () => {
         >
           <Form.Item
             name="newPass"
-            label="New password"
+            label="รหัสผ่านใหม่"
             rules={[{ required: true }]}
           >
             <Input.Password
-              placeholder="Enter your password"
+              placeholder="กรุณากรอกรหัสผ่าน"
               iconRender={(visible) =>
                 visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
               }
@@ -148,11 +148,11 @@ export const ChangPassword = () => {
           </Form.Item>
           <Form.Item
             name="chackNew"
-            label="Confirm new password"
+         
             rules={[{ required: true }]}
           >
             <Input.Password
-              placeholder="Enter your password"
+              placeholder="กรุณาพิมพ์รหัสผ่านใหม่อีกครั้ง"
               iconRender={(visible) =>
                 visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
               }
@@ -161,7 +161,7 @@ export const ChangPassword = () => {
           <Form.Item>
             <Space>
               <SubmitButton form={form} />
-              <Button htmlType="reset">Reset</Button>
+              <Button htmlType="reset">ล้าง</Button>
             </Space>
           </Form.Item>
         </Form>
@@ -180,7 +180,7 @@ export const ChangPassword = () => {
               rules={[{ required: true }]}
             >
               <Input.Password
-                placeholder="Enter your password"
+                placeholder="กรุณากรอกรหัสของคุณ"
                 iconRender={(visible) =>
                   visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
                 }

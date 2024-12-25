@@ -2,12 +2,12 @@ import { Car } from "./Cars"
 import { RouteCar } from "./RouetCar"
 
 export interface Itinerary {
-    itineraryId: number,
-    issueTime: Date,
-    arrivalTime: Date,
-    routeCarsId: number,
-    routeCars:RouteCar
+    arrivalTime: Date
+    cars: Car
     carsId: number
-    cars:Car
-    isUse:boolean
+    isUse: boolean
+    issueTime: Date
+    itineraryId: number
+    routeCars: RouteCar
+    routeCarsId: number
 }

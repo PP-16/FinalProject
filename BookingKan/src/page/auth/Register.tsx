@@ -21,6 +21,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { registerUser } from "../../api/redux/Slice/AccountSlice";
 import { useAppDispatch } from "../../api/redux/Store/configureStore";
 import { Passentger } from "../../api/models/Passentger";
+import { PathAccountRouter } from "../../routers/PathAllRoute";
 
 export const Register = () => {
   const [passent, setPassent] = useState<Passentger[]>([]);
@@ -47,13 +48,17 @@ export const Register = () => {
         registerUser({ email, password, passengerName, phone, idCardNumber })
       ).then((action: any) => {
         if (registerUser.fulfilled.match(action)) {
-          message.success("Submit success!");
-          history("/");
+          history(PathAccountRouter.login);
+          notification.success({
+            message: `สำเร็จ!`,
+            description: "กรุณาเข้าสู่ระบบอีกครั้ง!!",
+            placement: "top",
+          });
         }
         if (registerUser.rejected.match(action)) {
           notification.error({
-            message: `Submit failed!`,
-            description: "Please Check you anser agian!!",
+            message: `เกิดข้อผิดพลาด!`,
+            description: "กรุณาตรวจสอบอีกครั้ง!!",
             placement: "top",
           });
         }
@@ -80,7 +85,7 @@ export const Register = () => {
         }
       );
     }, [values]);
-    console.log("value", values);
+    // console.log("value", values);
     return (
       <Button
         type="primary"
@@ -89,7 +94,7 @@ export const Register = () => {
         block
         onClick={() => register(values)}
       >
-        Submit
+        เข้าสู่ระบบ
       </Button>
     );
   };
@@ -100,39 +105,39 @@ export const Register = () => {
         className="loginForm animate__animated animate__bounceInDown"
         form={form}
       >
-        <Typography.Title>Welcome to Bookingkan</Typography.Title>
-        <Form.Item label="passengerName" name="passengerName">
-          <Input placeholder="Enter your name"></Input>
+        <Typography.Title>ยินดีต้อนรับเข้าสู่ Bookingkan</Typography.Title>
+        <Form.Item label="ชื่อ" name="passengerName">
+          <Input placeholder="นายใจดี ดีใจ"></Input>
         </Form.Item>
-        <Form.Item label="idCardNumber" name="idCardNumber">
-          <Input placeholder="Enter your ID Cardnumber"></Input>
+        <Form.Item label="หมายเลขบัตรประชาชน" name="idCardNumber">
+          <Input placeholder="123-456789-129-9"></Input>
         </Form.Item>
-        <Form.Item label="phone" name="phone">
-          <Input placeholder="Enter your Phone Number"></Input>
+        <Form.Item label="เบอร์โทรศัพท์" name="phone">
+          <Input placeholder="080-****-***"></Input>
         </Form.Item>
-        <Form.Item label="email" name="email">
-          <Input placeholder="Enter your email"></Input>
+        <Form.Item label="อีเมล์" name="email">
+          <Input placeholder="ใจดี@gmaill.com"></Input>
         </Form.Item>
-        <Form.Item label="password" name="password">
+        <Form.Item label="รหัสผ่าน" name="password">
           <Input.Password
-            placeholder="Enter your password"
+            placeholder="gidee123"
             iconRender={(visible) =>
               visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
             }
           />
         </Form.Item>
         <SubmitButton form={form} />
-        <div className="regis">
-          <Link to="/">
+        {/* <div className="regis">
+          <Link to="/login">
             <Typography>Do you have an account?</Typography>
           </Link>
-        </div>
-        <Divider style={{ borderColor: "black" }}>or Login with</Divider>
+        </div> */}
+        {/* <Divider style={{ borderColor: "black" }}>or Login with</Divider>
         <div className="socialLogin">
           <GoogleOutlined className="socialIcon" style={{ color: "red" }} />
           <FacebookFilled className="socialIcon" style={{ color: "blue" }} />
           <TwitterOutlined className="socialIcon" style={{ color: "cyan" }} />
-        </div>
+        </div> */}
       </Form>
     </div>
   );

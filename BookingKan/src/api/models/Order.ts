@@ -7,21 +7,33 @@ export interface OrderRent {
     orderSatus: number,
     paymentDate: Date,
     passengerId: number
-    passenger:Passentger
+    passenger: Passentger
+    confirmReturn: boolean
+    orderRentItems: OrderRentItem
 }
 
 export interface OrderRentItem {
     orderRentItemId: number,
     quantity: number,
-    itemPrice: number,
+    carsPrice: number,
     dateTimePickup: string,
     dateTimeReturn: string,
     placePickup: string,
-    placeReturn:string,
+    placeReturn: string,
     carsId: number,
-    cars:Car,
+    cars: Car,
     driverId: number,
-    driver:Drivers,
+    driver: Drivers,
+    orderRentId: number
+    createAt: Date
+}
+
+export interface OrderPastDue {
+    ordersPastDueId: number
+    retrunDate: Date
+    numberOfDays: number
+    totalPricePastDue: number
+    paied: boolean
     orderRentId: number
     orderRent: OrderRent
 }

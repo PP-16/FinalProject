@@ -41,7 +41,7 @@ export const UserManage = () => {
     agent.Account.getRole().then((role) => setRoles(role));
   }, []);
 
-  console.log("roles", roles);
+  // console.log("roles", roles);
 
   const [searchText, setSearchText] = useState("");
   const [searchedColumn, setSearchedColumn] = useState("");
@@ -154,7 +154,7 @@ export const UserManage = () => {
   });
 
   const generateMenuProps = (record: any) => {
-    console.log("record", record.key);
+    // console.log("record", record.key);
     const items = roles.map((item) => ({
       label: item.roleNameTH,
       key: item.roleId,
@@ -168,10 +168,12 @@ export const UserManage = () => {
   };
 
   const handleMenuClick = (item: any, passengerKey: any) => {
-    console.log("click", item, "Passenger Key:", passengerKey);
+    // console.log("click", item, "Passenger Key:", passengerKey);
     const roleId = Number(item.key);
     const passentgerId = passengerKey
-     dispatch(updateRoleAsync({ roleId,passentgerId }));
+     dispatch(updateRoleAsync({ roleId,passentgerId })).then(()=>{
+      agent.Account.getAllUser().then((pass) => setPassenger(pass));
+     });
   };
 
   const columns = [
@@ -187,12 +189,12 @@ export const UserManage = () => {
       key: "email",
       ...getColumnSearchProps("email"),
     },
-    {
-      title: "หมายเลขบัตรประชาชน",
-      dataIndex: "idCardNumber",
-      key: "idCardNumber",
-      ...getColumnSearchProps("idCardNumber"),
-    },
+    // {
+    //   title: "หมายเลขบัตรประชาชน",
+    //   dataIndex: "idCardNumber",
+    //   key: "idCardNumber",
+    //   ...getColumnSearchProps("idCardNumber"),
+    // },
     {
       title: "เบอร์โทรศัพท์",
       dataIndex: "phone",
@@ -205,10 +207,10 @@ export const UserManage = () => {
       key: "isUse",
       render: (record: boolean, text: any) => {
         const onChange = (checked: boolean) => {
-          console.log("เปลี่ยนแปลงแล้ว:", checked, "Record Key:", text.key);
+          // console.log("เปลี่ยนแปลงแล้ว:", checked, "Record Key:", text.key);
           const Id = text.key;
           const isUse = checked;
-          dispatch(updateIsUseAsync({ Id, isUse }));
+          dispatch(updateIsUseAsync({ Id, isUse })).then(()=>{ agent.Account.getAllUser().then((pass) => setPassenger(pass));});
         };
         return (
           <>
@@ -242,7 +244,7 @@ export const UserManage = () => {
     },
   ];
 
-  const data = passenger.map((item) => {
+  const data:any = passenger.map((item) => {
     return {
       key: item.passengerId,
       email: item.email,
@@ -258,7 +260,7 @@ export const UserManage = () => {
 
   return (
     <>
-      <Table columns={columns} dataSource={data} />
+      <Table columns={columns} dataSource={data}  scroll={{ x: 1300 }} />
     </>
   );
 };

@@ -11,11 +11,11 @@ export interface Passentger {
     newPass: string,
     checkNew: string
     isUse: any
+    imagePassenger:string
 }
 
 export interface Role {
     roleId: number,
     roleName: string,
     roleNameTH: string
-    isUse: boolean
 }

@@ -1,5 +1,4 @@
 import {
-  Avatar,
   Button,
   Card,
   Col,
@@ -7,7 +6,7 @@ import {
   List,
   Modal,
   Pagination,
-  PaginationProps,
+  QRCode,
   Row,
   Tabs,
   TabsProps,
@@ -18,22 +17,30 @@ import { useEffect, useState } from "react";
 import { Booking } from "../../../api/models/Booking";
 import agent from "../../../api/agent";
 import moment from "moment";
-import Lottie from "lottie-react";
-import notfound from "../../../assets/lotti/Empty.json";
 import { PaymentForm } from "../../details/PaymentPage";
-import { useAppDispatch } from "../../../api/redux/Store/configureStore";
+import {
+  useAppDispatch,
+  useAppSelector,
+} from "../../../api/redux/Store/configureStore";
 import { ExclamationCircleFilled } from "@ant-design/icons";
-import { updateStatusBookingAsync } from "../../../api/redux/Slice/BookingSlice";
+import {
+  fetchBookingByPassentger,
+  updateStatusBookingAsync,
+} from "../../../api/redux/Slice/BookingSlice";
 import { NavLink } from "react-router-dom";
-
+import {
+  PathPrivateRouter,
+  PathPublicRouter,
+} from "../../../routers/PathAllRoute";
+const pathServer = import.meta.env.VITE_SERVER_QRCODE;
 export const HistoryBooking = () => {
-  const [booking, setBooking] = useState<Booking[]>([]);
+  // const [booking, setBooking] = useState<Booking[]>([]);
   const [paymodal, setPaymodal] = useState(false);
-
+  const booking: any = useAppSelector((t) => t.booking.bookByPassent);
   useEffect(() => {
-    agent.Bookings.getByPassentger().then((data) => setBooking(data));
+    dispatch(fetchBookingByPassentger());
   }, []);
-  // console.log("book", booking);
+  console.log("book", booking);
   const currentDate = new Date();
   // console.log("date", currentDate);
   const [currentPage, setCurrentPage] = useState(1);
@@ -50,7 +57,7 @@ export const HistoryBooking = () => {
 
   console.log("itemsMo", dataMo);
 
-  const handlePayment = (bookingId: number) => {
+  const handlePayment = () => {
     setPaymodal(true);
   };
 
@@ -64,18 +71,6 @@ export const HistoryBooking = () => {
     currentPage: any,
     itemsPerPage: any
   ) => {
-    // if (!Array.isArray(filteredItems)) {
-    //   // Handle the case where filteredItems is not an array
-    //   return (
-    //     <Lottie
-    //       loop={true}
-    //       autoPlay={true}
-    //       animationData={notfound}
-    //       height={"100%"}
-    //       width={"100%"}
-    //     />
-    //   );
-    // }
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = currentPage * itemsPerPage;
     console.log("filt", filteredItems);
@@ -108,7 +103,7 @@ export const HistoryBooking = () => {
               <Row>
                 {item.bookingStatus === 0 ? (
                   <Button
-                    onClick={() => handlePayment(item.bookingId)}
+                    onClick={() => handlePayment()}
                     type="primary"
                     style={{ backgroundColor: "yellowgreen" }}
                   >
@@ -141,23 +136,27 @@ export const HistoryBooking = () => {
         itemsPerPage
       ),
     },
-    // {
-    //   key: "2",
-    //   label: "รอดำเนินการ",
-    //   children: generateListAndPagination(
-    //     Array.isArray(booking)
-    //       ? booking.filter((item) => item?.bookingStatus === 1)
-    //       : [],
-    //     currentPage,
-    //     itemsPerPage
-    //   ),
-    // },
     {
-      key: "3",
+      key: "2",
       label: "ตั๋วรถ",
       children: generateListAndPagination(
         Array.isArray(booking)
-          ? booking.filter((item) => item?.bookingStatus === 2)
+          ? booking.filter(
+              (item) => item?.bookingStatus === 2 && item?.checkIn == false
+            )
+          : [],
+        currentPage,
+        itemsPerPage
+      ),
+    },
+    {
+      key: "3",
+      label: "ประวัติการจอง",
+      children: generateListAndPagination(
+        Array.isArray(booking)
+          ? booking.filter(
+              (item) => item?.bookingStatus === 2 && item?.checkIn == true
+            )
           : [],
         currentPage,
         itemsPerPage
@@ -178,12 +177,12 @@ export const HistoryBooking = () => {
 
   const showDeleteConfirm = (dataMo: any) => {
     confirm({
-      title: "Are you sure to delete this car?",
+      title: "ต้องการยกเลิกการจองนี้ ?",
       icon: <ExclamationCircleFilled />,
-      content: "Some descriptions",
-      okText: "Yes",
+      content: "หากยหเลิกแล้วทางบริษัทจะทำการตรวจสอบและคืนเงินให้ภายใน 2 วัน",
+      okText: "ตกลง",
       okType: "danger",
-      cancelText: "No",
+      cancelText: "ไม่",
       onOk() {
         updateBooking(dataMo);
         console.log("OK", dataMo);
@@ -226,11 +225,16 @@ export const HistoryBooking = () => {
           open={modals}
           onCancel={() => setModals(false)}
           width={900}
+          wrapClassName="vertical-center-modal"
           footer={
-            dataMo.bookingStatus !== 3 && (
+            (dataMo.bookingStatus == 2 && dataMo.checkIn == true) ||
+            (dataMo.bookingStatus !== 3 && (
               <Row style={{ justifyContent: "space-around" }}>
                 <Col span={10}>
-                  <NavLink to="/ChangeDateBooking" state={dataMo}>
+                  <NavLink
+                    to={PathPublicRouter.changeDateBooking}
+                    state={dataMo}
+                  >
                     <Button
                       type="primary"
                       block
@@ -252,9 +256,8 @@ export const HistoryBooking = () => {
                   </Button>
                 </Col>
               </Row>
-            )
+            ))
           }
-          wrapClassName="vertical-center-modal"
         >
           <Card title="ข้อมูลการจอง" style={{ margin: 20 }}>
             <Descriptions>
@@ -280,16 +283,35 @@ export const HistoryBooking = () => {
                 <Descriptions.Item label="หมายเลขที่นั่ง">
                   {dataMo.seatsSerialized}
                 </Descriptions.Item>
+                <Descriptions.Item label="หมายเหตุ">
+                  {dataMo.note}
+                </Descriptions.Item>
                 <Descriptions.Item label="ราคารวม">
                   {dataMo.totalPrice}
                 </Descriptions.Item>
               </>
             </Descriptions>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+              }}
+            >
+              <QRCode
+                value={`${pathServer}BookingManage?bookingId=${dataMo.bookingId}&details=true`}
+                bgColor="#fff"
+              />
+            </div>
           </Card>
         </Modal>
       )}
       <Card>
-        <Tabs defaultActiveKey="1" items={items} />
+        <Row gutter={{ xs: 8, sm: 16, md: 24, lg: 32 }}>
+          <Col xs={24} sm={24} md={16} xl={18} xxl={24}>
+            <Tabs defaultActiveKey="1" items={items} />
+          </Col>
+        </Row>
       </Card>
     </>
   );

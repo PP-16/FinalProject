@@ -3,202 +3,192 @@ import { Itinerary } from "../../api/models/Itinerary";
 import {
   Badge,
   Button,
+  ConfigProvider,
   Dropdown,
   Form,
   FormInstance,
   Input,
   InputRef,
   Modal,
+  Row,
+  Select,
   Space,
   Switch,
   Table,
   TableColumnsType,
+  TimePicker,
+  TimePickerProps,
   message,
   notification,
 } from "antd";
-import { CheckOutlined, CloseOutlined, DownOutlined, SearchOutlined } from "@ant-design/icons";
+import {
+  CheckOutlined,
+  CloseOutlined,
+  DownOutlined,
+  ExclamationCircleFilled,
+  SearchOutlined,
+} from "@ant-design/icons";
 import { useEffect, useRef, useState } from "react";
-import { useAppDispatch } from "../../api/redux/Store/configureStore";
+import {
+  useAppDispatch,
+  useAppSelector,
+} from "../../api/redux/Store/configureStore";
 import Highlighter from "react-highlight-words";
 import agent from "../../api/agent";
 import moment from "moment";
 import {
   createItineraryAsync,
+  deleteItinararyById,
+  fetchItinarery,
   updateIsUseItinararyAsync,
-  updateItineraryAsync,
 } from "../../api/redux/Slice/ItinerarySlice";
 import { FieldValues } from "react-hook-form";
+import { fetchCars, fetchClassCars } from "../../api/redux/Slice/CarsSlice";
+import { fetchRouteCars } from "../../api/redux/Slice/RouteCarSlice";
+import { Car } from "../../api/models/Cars";
+import { RouteCar } from "../../api/models/RouetCar";
+import { timeLog, trace } from "console";
+import dayjs from "dayjs";
+import "dayjs/locale/th";
+import locale from "antd/lib/locale/th_TH";
 
 export const Itinerarys = () => {
-  const [itinerary, setItinerary] = useState<Itinerary[]>([]);
-  const [searchText, setSearchText] = useState("");
-  const [searchedColumn, setSearchedColumn] = useState("");
-  const searchInput = useRef<InputRef>(null);
-  type DataIndex = keyof Itinerary;
-  const { confirm } = Modal;
-  const [form] = Form.useForm();
+  const cars = useAppSelector((t) => t.cars.cars);
+  const itinerary = useAppSelector((t) => t.itinerary.itinerary);
+  const routeCars = useAppSelector((t) => t.routes.routeCars);
   const dispatch = useAppDispatch();
-  const [modals, setModal] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [form] = Form.useForm();
 
-  //#region  createDriver
-  const handleOk = () => {
-    setIsModalOpen(false);
+  const [modalData, setModalData] = useState(false);
+  const [dataEdit, setDataEdit] = useState<any>([]);
+  const [carId, setCarId] = useState(null);
+  const [routeId, setRouteId] = useState(null);
+  const [issueTime, setIssueTime] = useState<any>(null);
+  const [arrivalTime, setArrivalTime] = useState<any>(null);
+  useEffect(() => {
+    dispatch(fetchItinarery());
+    dispatch(fetchCars());
+    dispatch(fetchRouteCars());
+  }, [dispatch]);
+
+  //#region  creat/edit
+
+  const onChangeIssueTime = (time: any) => {
+    setIssueTime(time);
   };
-  const handleCancel = () => {
-    setIsModalOpen(false);
+
+  const onChangeArrivalTime = (time: any) => {
+    setArrivalTime(time);
   };
-  const onFinish = async ({
-    itineraryId,
-    issueTime,
-    arrivalTime,
-    routeCarsId,
-    carsId,
-  }: FieldValues) => {
+
+  const handleEdit = (data: any) => {
+    setModalData(true);
+    setDataEdit(data);
+    console.log("data", data);
+  };
+
+  const onCancleModal = () => {
+    setModalData(false);
+    setDataEdit([]);
+  };
+
+  const onFinish = async () => {
+
     try {
-      await dispatch(
-        createItineraryAsync({
-          itineraryId,
-          issueTime,
-          arrivalTime,
-          routeCarsId,
-          carsId,
-        })
-      ).then((action: any) => {
-        if (createItineraryAsync.fulfilled.match(action)) {
-          message.success("Submit success!");
-          window.location.reload();
-          setModal(false);
-        }
-        if (createItineraryAsync.rejected.match(action)) {
-          notification.error({
-            message: `Submit failed!`,
-            description: "Please Check you anser agian!!",
-            placement: "top",
-          });
-        }
+      const id = dataEdit?.key ?? 0;
+      const ItinararyDto: any = {
+        itineraryId: id,
+        issueTime: issueTime,
+        arrivalTime: arrivalTime,
+        routeCarsId: routeId,
+        carsId: carId,
+      };
+      console.log("ItinararyDto", ItinararyDto);
+
+      await dispatch(createItineraryAsync(ItinararyDto)).then(async () => {
+        await dispatch(fetchItinarery());
+        setModalData(false);
+        setDataEdit([]);
+        form.resetFields();
       });
     } catch (error) {
       console.log(error);
     }
   };
-  const showModal = () => {
-    setIsModalOpen(true);
-  };
-  const onReset = () => {
-    form.resetFields();
-  };
+  console.log("modalData", modalData);
+
+  useEffect(() => {
+    if (modalData) {
+      if (dataEdit?.key === undefined) {
+        form.setFieldsValue({
+          itineraryId: null,
+          issueTime: null,
+          arrivalTime: null,
+          routeCarsId: null,
+          carsId: null,
+        });
+        setCarId(null);
+        setRouteId(null);
+        setArrivalTime(null);
+        setIssueTime(null);
+      } else {
+        form.setFieldsValue({
+          issueTime: dataEdit?.issueTime,
+          arrivalTime: dataEdit?.arrivalTime,
+          routeCarsId: dataEdit?.routeCarsId,
+          carsId: dataEdit?.carsId,
+        });
+        setCarId(dataEdit?.carsId);
+        setRouteId(dataEdit?.routeCarsId);
+        setArrivalTime(dataEdit?.arrivalTimeRaw);
+        setIssueTime(dataEdit?.issueTimeRaw);
+      }
+    }
+  }, [dataEdit, form, modalData]);
   //#endregion
 
-  //#region updateAnddelete
-
+  //#region  delete
+  const { confirm } = Modal;
   const showDeleteConfirm = (record: any) => {
     confirm({
-      title: "Are you sure delete this task?",
+      title: "ต้องการลบรอบการเดินทางนี้?",
       icon: <ExclamationCircleFilled />,
-      content: "Some descriptions",
-      okText: "Yes",
+      content: "กรุณาตรวจสอบให้แน่ใจว่าต้องการลบรอบการเดินทางนี้",
+      okText: "ตกลง",
       okType: "danger",
-      cancelText: "No",
+      cancelText: "ไม่ ขอบคุณ",
       onOk() {
-        agent.RoustCars.delete(record.key);
-        window.location.reload();
+        try {
+          dispatch(deleteItinararyById(record.key)).then(async () => {
+            await dispatch(fetchItinarery());
+          });
+        } catch (error) {
+          console.log("error", error);
+        }
       },
       onCancel() {
         console.log("Cancel");
       },
     });
   };
-
-  const update = async ({
-    itineraryId,
-    issueTime,
-    arrivalTime,
-    routeCarsId,
-    carsId,
-  }: FieldValues) => {
-    try {
-      console.log(
-        "itinerarydata",
-        itineraryId,
-        issueTime,
-        arrivalTime,
-        routeCarsId,
-        carsId
-      );
-      await dispatch(
-        updateItineraryAsync({
-          itineraryId,
-          issueTime,
-          arrivalTime,
-          routeCarsId,
-          carsId,
-        })
-      ).then((action: any) => {
-        if (updateItineraryAsync.fulfilled.match(action)) {
-          message.success("Submit success!");
-        }
-        if (updateItineraryAsync.rejected.match(action)) {
-          notification.error({
-            message: `Submit failed!`,
-            description: "Please Check you anser agian!!",
-            placement: "top",
-          });
-        }
-      });
-      window.location.reload();
-    } catch (error: any) {
-      console.log("e", error);
-    }
-  };
-  const SubmitButton = ({ form }: { form: FormInstance }) => {
-    const [submittable, setSubmittable] = useState(false);
-
-    // Watch all values
-    const values = Form.useWatch([], form);
-
-    useEffect(() => {
-      form.validateFields({ validateOnly: true }).then(
-        () => {
-          setSubmittable(true);
-        },
-        () => {
-          setSubmittable(false);
-        }
-      );
-    }, [values]);
-
-    return (
-      <Button
-        type="primary"
-        htmlType="submit"
-        disabled={!submittable}
-        onClick={() => update(form)}
-      >
-        Submit
-      </Button>
-    );
-  };
   //#endregion
 
-  //#region table
+  //#region  table
   const expandedRowRender = (record: any) => {
-    console.log("re", record);
-
-    const columns: TableColumnsType<Itinerary> = [
+    const columns: any = [
       {
         title: "เวลาที่ออกเดินทาง",
         dataIndex: "arrivalTime",
         key: "arrivalTime",
         width: "30%",
-        ...getColumnSearchProps("arrivalTime"),
+        // ...getColumnSearchProps("arrivalTime", "เวลาที่ออกเดินทาง"),
       },
       {
         title: "เวลาที่ไปถึง",
         dataIndex: "issueTime",
         key: "issueTime",
         width: "20%",
-        ...getColumnSearchProps("issueTime"),
+        // ...getColumnSearchProps("issueTime", "เวลาที่ไปถึง"),
       },
       {
         title: "จำนวณที่นั่ง",
@@ -222,172 +212,72 @@ export const Itinerarys = () => {
     ];
 
     return (
-      <Table columns={columns} dataSource={dataexpan} pagination={false} />
+      <Table
+        columns={columns}
+        dataSource={dataexpan}
+        pagination={false}
+        scroll={{ x: 1300 }}
+      />
     );
   };
 
-  const handleSearch = (
-    selectedKeys: string[],
-    confirm: (param?: FilterConfirmProps) => void,
-    dataIndex: DataIndex
-  ) => {
-    confirm();
-    setSearchText(selectedKeys[0]);
-    setSearchedColumn(dataIndex);
-  };
-
-  const handleReset = (clearFilters: () => void) => {
-    clearFilters();
-    setSearchText("");
-    window.location.reload();
-  };
-
-  const getColumnSearchProps = (
-    dataIndex: DataIndex
-  ): ColumnType<Itinerary> => ({
-    filterDropdown: ({
-      setSelectedKeys,
-      selectedKeys,
-      confirm,
-      clearFilters,
-      close,
-    }) => (
-      <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
-        <Input
-          ref={searchInput}
-          placeholder={`Search ${dataIndex}`}
-          value={selectedKeys[0]}
-          onChange={(e) =>
-            setSelectedKeys(e.target.value ? [e.target.value] : [])
-          }
-          onPressEnter={() =>
-            handleSearch(selectedKeys as string[], confirm, dataIndex)
-          }
-          style={{ marginBottom: 8, display: "block" }}
-        />
-        <Space>
-          <Button
-            type="primary"
-            onClick={() =>
-              handleSearch(selectedKeys as string[], confirm, dataIndex)
-            }
-            icon={<SearchOutlined />}
-            size="small"
-            style={{ width: 90 }}
-          >
-            Search
-          </Button>
-          <Button
-            onClick={() => clearFilters && handleReset(clearFilters)}
-            size="small"
-            style={{ width: 90 }}
-          >
-            Reset
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            onClick={() => {
-              confirm({ closeDropdown: false });
-              setSearchText((selectedKeys as string[])[0]);
-              setSearchedColumn(dataIndex);
-            }}
-          >
-            Filter
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            onClick={() => {
-              close();
-            }}
-          >
-            close
-          </Button>
-        </Space>
-      </div>
-    ),
-    filterIcon: (filtered: boolean) => (
-      <SearchOutlined style={{ color: filtered ? "#1677ff" : undefined }} />
-    ),
-    onFilter: (value, record) =>
-      record[dataIndex]
-        .toString()
-        .toLowerCase()
-        .includes((value as string).toLowerCase()),
-    onFilterDropdownOpenChange: (visible) => {
-      if (visible) {
-        setTimeout(() => searchInput.current?.select(), 100);
-      }
-    },
-    render: (text) =>
-      searchedColumn === dataIndex ? (
-        <Highlighter
-          highlightStyle={{ backgroundColor: "#ffc069", padding: 0 }}
-          searchWords={[searchText]}
-          autoEscape
-          textToHighlight={text ? text.toString() : ""}
-        />
-      ) : (
-        text
-      ),
-  });
-
-  const columns: any = [
+  const columns = [
     {
       title: "สถานีต้นทาง",
       dataIndex: "originName",
       key: "originName",
-      ...getColumnSearchProps("originName"),
+      // ...getColumnSearchProps("originName", "สถานีต้นทาง"),
     },
     {
       title: "สถานีปลายทาง",
       dataIndex: "destinationName",
       key: "destinationName",
-      ...getColumnSearchProps("destinationName"),
+      // ...getColumnSearchProps("destinationName", "สถานีปลายทาง"),
     },
     {
       title: "หมายเลขทะเบียนรถ",
       dataIndex: "carRegistrationNumber",
       key: "carRegistrationNumber",
-      ...getColumnSearchProps("carRegistrationNumber"),
+      // ...getColumnSearchProps("carRegistrationNumber", "หมายเลขทะเบียนรถ"),
     },
     {
       title: "ราคาต่อที่นั่ง",
       dataIndex: "priceSeat",
       key: "priceSeat",
-
+      sorter: (a: any, b: any) => a.priceSeat - b.priceSeat,
     },
     {
       title: "เปิดใช้งาน",
       dataIndex: "isUse",
       key: "isUse",
-      render: (record: boolean, text: any) => {
-        const onChange = (checked: boolean) => {
-          console.log("เปลี่ยนแปลงแล้ว:", checked, "Record Key:", text.key);
+      render: (record: any, text: any) => {
+        const onChange = (checked: any) => {
           const Id = text.key;
           const isUse = checked;
-           dispatch(updateIsUseItinararyAsync({ Id, isUse }));
+          dispatch(updateIsUseItinararyAsync({ Id, isUse })).then(() => {
+            dispatch(fetchItinarery());
+          });
         };
-        console.log("record",record);
-        
+
         return (
-          <>
-            <Switch
-              checkedChildren={<CheckOutlined />}
-              unCheckedChildren={<CloseOutlined />}
-              onChange={onChange}
-              defaultChecked={record}
-            />
-          </>
+          <Switch
+            checkedChildren={<CheckOutlined />}
+            unCheckedChildren={<CloseOutlined />}
+            onChange={onChange}
+            defaultChecked={record}
+          />
         );
       },
     },
     {
       title: "แก้ไข",
       key: "operation",
-      render: (text: any, record: any) => (
-        <Button type="dashed" onClick={() => setModal(record)}>
+      render: (_: any, record: any) => (
+        <Button
+          type="dashed"
+          style={{ backgroundColor: "#faad14" }}
+          onClick={() => handleEdit(record)}
+        >
           แก้ไข
         </Button>
       ),
@@ -396,7 +286,7 @@ export const Itinerarys = () => {
     {
       title: "ลบ",
       key: "operation",
-      render: (text: any, record: any) => (
+      render: (_: any, record: any) => (
         <Button
           style={{ color: "whitesmoke", backgroundColor: "red" }}
           onClick={() => showDeleteConfirm(record)}
@@ -408,9 +298,9 @@ export const Itinerarys = () => {
     },
   ];
 
-  const data = itinerary.map((item) => {
-    const dateArrival = moment(item.arrivalTime).format("LT");
-    const dateIssuel = moment(item.issueTime).format("LT");
+  const data = itinerary.map((item: Itinerary) => {
+    const dateArrival = dayjs(item.arrivalTime).format("h:mm A");
+    const dateIssue = dayjs(item.issueTime).format("h:mm A");
 
     return {
       key: item.itineraryId,
@@ -418,91 +308,110 @@ export const Itinerarys = () => {
       priceSeat: item.cars.priceSeat,
       quantitySeat: item.cars.quantitySeat,
       arrivalTime: dateArrival,
-      issueTime: dateIssuel,
+      issueTime: dateIssue,
+      arrivalTimeRaw: item.arrivalTime,
+      issueTimeRaw: item.issueTime,
       originName: item.routeCars.originName,
       destinationName: item.routeCars.destinationName,
-      isUse:item.isUse
+      isUse: item.isUse,
+      routeCarsId: item.routeCars.routeCarsId,
+      carsId: item.cars.carsId,
     };
   });
   //#endregion
+  console.log("dataEdit?.carsId", dataEdit?.carsId);
 
-  useEffect(() => {
-    agent.Itinerarys.getItinarery().then((itinerary) =>
-      setItinerary(itinerary)
-    );
-  }, []);
-
-  console.log("itinerary", itinerary);
-  console.log("modals", modals);
   return (
     <>
+      <Row style={{ justifyContent: "flex-end", margin: 10 }}>
+        <Button
+          type="primary"
+          style={{ backgroundColor: "#4F6F52" }}
+          onClick={() => setModalData(true)}
+        >
+          สร้างรอบการเดินรถ
+        </Button>
+      </Row>
       <Table
+        scroll={{ x: 1300 }}
         columns={columns}
         dataSource={data}
         expandable={{ expandedRowRender }}
       />
 
-      {modals && (
-        <Modal
-          title="Edit Itinerary"
-          centered
-          visible={modals}
-          onOk={() => setModal(false)}
-          onCancel={() => setModal(false)}
+      <Modal open={modalData} onCancel={onCancleModal} centered footer={null}>
+        <Form
+          form={form}
+          name="validateOnly"
+          layout="vertical"
+          autoComplete="off"
+          onFinish={onFinish}
         >
-          <Form
-            form={form}
-            name="validateOnly"
-            layout="vertical"
-            autoComplete="off"
-            onFinish={update}
+          <Form.Item
+            name="issueTime"
+            label="เวลาที่ออกเดินทาง"
+            initialValue={dataEdit?.issueTime}
           >
-            <Form.Item
-              initialValue={modals.key}
-              name="itineraryId"
-              label="itineraryId"
-            >
-              <Input disabled />
-            </Form.Item>
-            <Form.Item
-              initialValue={modals.issueTime}
-              name="issueTime"
-              label="issueTime"
-            >
-              <Input />
-            </Form.Item>
+            <ConfigProvider locale={locale}>
+              <TimePicker format={"HH:mm"} onChange={onChangeIssueTime} />
+            </ConfigProvider>
+          </Form.Item>
 
-            <Form.Item
-              initialValue={modals.arrivalTime}
-              name="arrivalTime"
-              label="arrivalTime"
-            >
-              <Input />
-            </Form.Item>
+          <Form.Item
+            name="arrivalTime"
+            label="เวลาที่ไปถึง"
+            initialValue={dataEdit?.arrivalTime}
+          >
+            <ConfigProvider locale={locale}>
+              <TimePicker format={"HH:mm"} onChange={onChangeArrivalTime} />
+            </ConfigProvider>
+          </Form.Item>
 
-            <Form.Item
-              initialValue={modals.routeCarsId}
-              name="routeCarsId"
-              label="routeCarsId"
-            >
-              <Input />
-            </Form.Item>
-            <Form.Item
-              initialValue={modals.carsId}
-              name="carsId"
-              label="carsId"
-            >
-              <Input />
-            </Form.Item>
-            <Form.Item>
-              <Space>
-                <SubmitButton form={form} />
-                <Button htmlType="reset">Reset</Button>
-              </Space>
-            </Form.Item>
-          </Form>
-        </Modal>
-      )}
+          <Form.Item
+            name="routeCarsId"
+            label="เส้นทางการเดินรถ"
+            initialValue={dataEdit?.routeCarsId}
+          >
+            <Select
+              placeholder="เลือกเส้นทางการเดินรถ"
+              onChange={(value: any) => setRouteId(value)}
+              options={
+                routeCars &&
+                routeCars.map((route: RouteCar) => ({
+                  value: route.routeCarsId,
+                  label: `${route.originName}-${route.destinationName}`,
+                }))
+              }
+            />
+          </Form.Item>
+          <Form.Item name="carsId" label="รถ" initialValue={dataEdit?.carsId}>
+            <Select
+              placeholder="เลือกรถ"
+              onChange={(value: any) => {
+                console.log("value", value);
+                setCarId(value);
+              }}
+              options={
+                cars &&
+                cars
+                  .filter((car: Car) => car.categoryCar === 1)
+                  .map((car: Car) => ({
+                    value: car.carsId,
+                    label: car.carRegistrationNumber,
+                  }))
+              }
+            />
+          </Form.Item>
+          <Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit">
+                บันทึก
+              </Button>
+              <Button htmlType="reset">ล้าง</Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
     </>
   );
 };

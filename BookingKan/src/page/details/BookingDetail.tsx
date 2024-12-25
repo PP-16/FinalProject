@@ -3,16 +3,15 @@ import {
   Card,
   Carousel,
   Col,
-  Image,
+  Input,
+  Modal,
   Popconfirm,
   Row,
   Typography,
   message,
 } from "antd";
 import { useLocation, useNavigate } from "react-router-dom";
-import carseat from "../../assets/car-seat.png";
-import Booked from "../../assets/carseat.png";
-import paySeat from "../../assets/payseat.png";
+
 import { useEffect, useState } from "react";
 import moment from "moment";
 import {
@@ -27,33 +26,34 @@ import {
 } from "../../api/redux/Slice/BookingSlice";
 import { PaymentForm } from "./PaymentPage";
 import { BusSeatLayout } from "./components/BusSeatLayout";
+import {
+  PathAccountRouter,
+  PathPublicRouter,
+} from "../../routers/PathAllRoute";
+import { PathImage, imageLocal } from "../../routers/PathImage";
 
 export const BookingDetail = () => {
   const isAuthenticated = localStorage.getItem("user");
-  const user = isAuthenticated ? JSON.parse(isAuthenticated) : null;
-  // console.log("isAuthenticated", user.passengerId);
+  const user = isAuthenticated && JSON.parse(isAuthenticated);
+  // console.log("isAuthenticated", user);
   const location = useLocation();
   const propsData = location.state;
   const [paymodal, setPaymodal] = useState(false);
-  const [bookingData, setBookingData] = useState<any>(null);
+  const navigate = useNavigate();
+  const bookingData: any = useAppSelector((t) => t.booking.booked);
+  const system = useAppSelector((t) => t.system.system);
+  const [note, setNote] = useState("");
+  // console.log("propsData", propsData);
 
   const dispatch = useAppDispatch();
 
   const details = propsData.item;
   const validate = propsData.formData;
-  // console.log("details", validate.DateBooking.$d);
 
   const dateBooking = moment(validate.DateBooking.$d).format(
     "YYYY-MM-DDTHH:mm:ss"
   );
   const dateBookingShow = moment(validate.DateBooking.$d).format("Do MMM YY");
-  const contentStyle: React.CSSProperties = {
-    height: "250px",
-    color: "#fff",
-    lineHeight: "160px",
-    textAlign: "center",
-    background: "#364d79",
-  };
 
   const timeArrival = moment(details.arrivalTime).format("LT");
   const timeIssueTime = moment(details.issueTime).format("LT");
@@ -78,9 +78,6 @@ export const BookingDetail = () => {
     checkSeat();
   }, []);
 
-  const SeatBookingPending = useAppSelector((t) => t.booking.seatBookedPending);
-  console.log("seatBookd", SeatBookingPending);
-
   //#endregion
 
   //#region  seatManage
@@ -92,23 +89,37 @@ export const BookingDetail = () => {
   //#endregion
 
   const totalPrice = selectedSeat.length * details.cars.priceSeat;
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const handleOk = () => {
+    navigate(PathAccountRouter.login);
+  };
+
+  const handleCancel = () => {
+    setIsModalOpen(false);
+    navigate(PathAccountRouter.home);
+  };
   //#region creatBooking
   const handleBooking = async () => {
+    user == null && setIsModalOpen(true);
+
     try {
-      const bookingDto: Booking = {
+      const bookingDto = {
         dateAtBooking: dateBooking,
         seatNumbers: selectedSeat.map((item) => item.toString()),
         totalPrice: totalPrice,
         passengerId: user.passengerId,
         itineraryId: details.itineraryId,
+        note: note,
       };
       console.log("bDTo", bookingDto);
 
-      const booking = await dispatch(createBookingsAsync(bookingDto)).then(() =>
-        message.success("จองสำเร็จ")
-      );
-      setBookingData(booking.payload);
+      await dispatch(createBookingsAsync(bookingDto)).then(() => {
+        message.success("จองสำเร็จ");
+        checkSeat();
+        navigate(PathPublicRouter.accountPage);
+      });
+
       // window.location.reload();
     } catch (error) {
       console.log(error);
@@ -118,18 +129,22 @@ export const BookingDetail = () => {
 
   //#region handlePaymentBooking
   const handlePaymentBooking = async () => {
+    user == null && setIsModalOpen(true);
+
     try {
-      const bookingDto: Booking = {
+      const bookingDto = {
         dateAtBooking: dateBooking,
         seatNumbers: selectedSeat.map((item) => item.toString()),
         totalPrice: totalPrice,
         passengerId: user.passengerId,
         itineraryId: details.itineraryId,
+        note: note,
       };
       console.log("bDTo", bookingDto);
 
-      const booking = await dispatch(createBookingsAsync(bookingDto));
-      setBookingData(booking.payload);
+      await dispatch(createBookingsAsync(bookingDto)).then(() => {
+        checkSeat();
+      });
       setPaymodal(true);
     } catch (error) {
       console.log(error);
@@ -139,6 +154,17 @@ export const BookingDetail = () => {
 
   return (
     <>
+      <Modal
+        title="แจ้งเตือน"
+        open={isModalOpen}
+        onOk={handleOk}
+        onCancel={handleCancel}
+      >
+        <>
+          <Typography>กรุณาเข้าสู่ระบบก่อนใช้งาน</Typography>
+        </>
+      </Modal>
+
       {paymodal == true && (
         <PaymentForm
           bookingData={bookingData.bookingId}
@@ -150,21 +176,21 @@ export const BookingDetail = () => {
         <Card style={{ width: "100%" }}>
           <Row style={{ justifyContent: "center", alignItems: "center" }}>
             <Row style={{ flex: 1, justifyContent: "center" }}>
-              <Col span={8}>
-                <img src={carseat} width={50} />
+              <Col xs={24} sm={18} md={12} xl={8} xxl={8}>
+                <img src={imageLocal.carseat} width={50} />
                 <Typography>ที่นั่งที่ว่างอยู่</Typography>
               </Col>
             </Row>
             <Row style={{ flex: 1, justifyContent: "center" }}>
-              <Col span={8}>
-                <img src={Booked} width={50} />
+              <Col xs={24} sm={18} md={12} xl={8} xxl={8}>
+                <img src={imageLocal.Booked} width={50} />
                 <Typography>ที่นั่งที่ถูกจองแล้ว</Typography>
               </Col>
             </Row>
 
             <Row style={{ flex: 1, justifyContent: "center" }}>
-              <Col span={8}>
-                <img src={paySeat} width={50} />
+              <Col xs={24} sm={18} md={12} xl={8} xxl={8}>
+                <img src={imageLocal.paySeat} width={50} />
                 <Typography>ที่นั่งที่ชำระแล้ว</Typography>
               </Col>
             </Row>
@@ -172,19 +198,33 @@ export const BookingDetail = () => {
         </Card>
       </Row>
       <Row>
-        <Col xl={15} md={12} sm={18}>
+        <Col xs={24} sm={18} md={16} xl={12} xxl={12}>
           <Card style={{ width: "100%" }}>
-          <BusSeatLayout props={details} onSelectedSeatChange={handleSelectedSeatChange} />
-            {/* {details.cars.quantitySeat > 15 ? (
-              <BusSeatLayout props={details} onSelectedSeatChange={handleSelectedSeatChange} />
-            ) : (
-              <VanSeatLayout props={details} onSelectedSeatChange={handleSelectedSeatChange} />
-            )} */}
+            <BusSeatLayout
+              props={propsData}
+              onSelectedSeatChange={handleSelectedSeatChange}
+            />
           </Card>
         </Col>
-        <Col xl={9} md={12} sm={18}>
+        <Col xs={24} sm={18} md={8} xl={12} xxl={12}>
           <Card>
-            <Carousel autoplay>
+            <Carousel autoplay draggable>
+              {system.map((sys: any) =>
+                sys?.imageSlide?.map((imageS: any) => {
+                  // console.log("imageS", imageS);
+                  const mapImg = PathImage.imageSlide + imageS.imageSlides;
+                  return (
+                    <div>
+                      <img
+                        style={{ width: "100%", height: "350px" }}
+                        src={mapImg}
+                      ></img>
+                    </div>
+                  );
+                })
+              )}
+            </Carousel>
+            {/* <Carousel autoplay>
               <div>
                 <Image
                   src="https://cdn.getyourguide.com/img/tour/5f449108c4917.jpeg/145.jpg"
@@ -213,7 +253,7 @@ export const BookingDetail = () => {
                   style={contentStyle}
                 ></Image>
               </div>
-            </Carousel>
+            </Carousel> */}
           </Card>
           <Card
             title={`${details.routeCars.originName} - ${details.routeCars.destinationName}`}
@@ -249,6 +289,17 @@ export const BookingDetail = () => {
             </Row>
 
             <Row>
+              <Typography style={{ color: "gray", fontSize: 15 }}>
+                หมายเหตุ :
+              </Typography>
+              <Input
+                placeholder="โปรดระบุหากต้องการขึ้น/ลงระหว่างทาง"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+              />
+            </Row>
+
+            <Row>
               <Typography style={{ color: "gray", fontSize: 20 }}>
                 หมายเลขที่นั่ง :
               </Typography>
@@ -267,32 +318,41 @@ export const BookingDetail = () => {
                 {totalPrice}
               </Typography>
             </Row>
-            <Button
-              type="primary"
-              shape="round"
-              size="large"
-              block
-              onClick={handleBooking}
-              style={{ backgroundColor: "#ffa39e", margin: 20 }}
-            >
-              จอง
-            </Button>
-            <Popconfirm
-              title="ชำระเงิน"
-              description="ต้องการชำระเงินเลยใช่หรือไม่"
-              onConfirm={handlePaymentBooking}
-              onOpenChange={() => console.log("open change")}
-            >
-              <Button
-                type="primary"
-                shape="round"
-                size="large"
-                block
-                style={{ backgroundColor: "#ffa39e", margin: 20 }}
-              >
-                ชำระเงิน
-              </Button>
-            </Popconfirm>
+            <Row>
+              <Col xs={24} sm={24} md={12} xl={12} xxl={12}>
+                <Button
+                  type="primary"
+                  shape="round"
+                  size="large"
+                  block
+                  onClick={handleBooking}
+                  style={{
+                    backgroundColor: "#4F6F52",
+                    color: "#fff",
+                  }}
+                >
+                  จอง
+                </Button>
+              </Col>
+
+              <Col xs={24} sm={24} md={12} xl={12} xxl={12}>
+                <Popconfirm
+                  title="ชำระเงิน"
+                  description="ต้องการชำระเงินเลยใช่หรือไม่"
+                  onConfirm={handlePaymentBooking}
+                >
+                  <Button
+                    type="primary"
+                    shape="round"
+                    size="large"
+                    block
+                    style={{ backgroundColor: "yellowgreen" }}
+                  >
+                    ชำระเงิน
+                  </Button>
+                </Popconfirm>
+              </Col>
+            </Row>
           </Card>
         </Col>
       </Row>

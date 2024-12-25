@@ -23,6 +23,7 @@ import { useAppDispatch } from "../../api/redux/Store/configureStore";
 import Password from "antd/es/input/Password";
 import { FieldValues } from "react-hook-form";
 import { signInUser } from "../../api/redux/Slice/AccountSlice";
+import { PathAccountRouter, PathPublicRouter } from "../../routers/PathAllRoute";
 
 export const Login = () => {
   const [passent, setPassent] = useState<Passentger[]>([]);
@@ -40,8 +41,8 @@ export const Login = () => {
     try {
       //console.log("Email and Password before dispatch:", email, password);
       await dispatch(signInUser({ email, password }))
-      history("/")
-      // window.location.reload();
+      history(PathPublicRouter.home)
+      window.location.reload();
       // Rest of the code remains unchanged
     } catch (error: any) {
       console.log("Error during login:", error);
@@ -73,7 +74,7 @@ export const Login = () => {
         block
         onClick={() => login(values)}
       >
-        Submit
+        เข้าสู่ระบบ
       </Button>
     );
   };
@@ -83,9 +84,9 @@ export const Login = () => {
         className="loginForm animate__animated animate__bounceInDown"
         form={form}
       >
-        <Typography.Title>Welcome to Bookingkan</Typography.Title>
+        <Typography.Title>ยินดีต้อนรับเข้าสู่ BookingKan</Typography.Title>
         <Form.Item
-          label="email"
+          label="อีเมล์"
           name="email"
           rules={[{ required: true, message: "Please enter your email" }]}
         >
@@ -93,7 +94,7 @@ export const Login = () => {
         </Form.Item>
 
         <Form.Item
-          label="password"
+          label="รหัสผ่าน"
           name="password"
           rules={[{ required: true, message: "Please enter your password" }]}
         >
@@ -108,17 +109,17 @@ export const Login = () => {
         <SubmitButton form={form} />
 
         <div className="regis">
-          <Link to="/register">
-            <Typography>Don't have an account?</Typography>
+          <Link to={PathAccountRouter.register}>
+            <Typography>สมัครสมาชิก</Typography>
           </Link>
         </div>
 
-        <Divider style={{ borderColor: "black" }}>or Login with</Divider>
+        {/* <Divider style={{ borderColor: "black" }}>or Login with</Divider>
         <div className="socialLogin">
           <GoogleOutlined className="socialIcon" style={{ color: "red" }} />
           <FacebookFilled className="socialIcon" style={{ color: "blue" }} />
           <TwitterOutlined className="socialIcon" style={{ color: "cyan" }} />
-        </div>
+        </div> */}
       </Form>
     </div>
   );
